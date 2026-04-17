@@ -1,10 +1,27 @@
 import React from 'react'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import Home from './pages/Home'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
 
 const App = () => {
+  const appRouter = createBrowserRouter([
+    {
+      path: '/',
+      element: <Home />
+    },
+    {
+      path: '/login',
+      element: <Login />
+    },
+    {
+      path: '/signup',
+      element: <Signup />
+    }
+  ])
+  
   return (
-    <div>
-      <h1 className='text-3xl font-bold underline'>hi how ru</h1>
-    </div>
+    <RouterProvider router={appRouter} />
   )
 }
 
