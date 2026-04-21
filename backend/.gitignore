@@ -1,0 +1,28 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# uv cache
+.uv/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# OS garbage
+.DS_Store           # macOS
+
+# IDE
+.vscode/
+.idea/
+
+# Env variables / secrets (never commit these)
+.env
+.env.*
