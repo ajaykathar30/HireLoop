@@ -1,0 +1,22 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Generated reports & downloaded data
+reports/
+cloned_repos/
+*.pdf
+
+# OS generated files
+.DS_Store
+Thumbs.db
