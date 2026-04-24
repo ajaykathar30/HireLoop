@@ -3,9 +3,18 @@ from logging.config import fileConfig
 
 from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
+from sqlmodel import SQLModel
+import pgvector.sqlalchemy
 
-from src.config import settings
-from src.models import SQLModel
+from core.config import settings
+# Import all models here so SQLModel.metadata knows about them
+from models.user import User
+from models.candidate import Candidate
+from models.company import Company
+from models.job import Job
+from models.application import Application
+from models.interview import InterviewSession
+from models.notification import Notification
 
 # this is the Alembic Config object
 config = context.config
@@ -36,7 +45,9 @@ def do_run_migrations(connection):
         context.run_migrations()
 
 async def run_migrations_online() -> None:
-    connectable = create_async_engine(settings.DATABASE_URL)
+    # Handle the postgresql+asyncpg case
+    url = settings.DATABASE_URL
+    connectable = create_async_engine(url)
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()
