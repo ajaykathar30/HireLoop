@@ -1,72 +1,96 @@
-import { FileText, Target, Mic2, FileCheck } from "lucide-react";
-import { cn } from "../lib/utils";
+import { FileText, Target, Mic2, FileCheck, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const features = [
   {
     title: "Parsing Protocol",
     description: "Deep-learning extraction engine that maps talent trajectories, not just keywords.",
     icon: FileText,
-    color: "bg-accent",
-    id: "01"
+    iconColor: "text-blue-500",
+    bgColor: "bg-blue-500/10",
+    borderColor: "border-blue-500/20"
   },
   {
     title: "Bias-Elimination",
     description: "Architectural neural networks designed for pure meritocratic evaluation.",
     icon: Target,
-    color: "bg-secondary",
-    id: "02"
+    iconColor: "text-purple-500",
+    bgColor: "bg-purple-500/10",
+    borderColor: "border-purple-500/20"
   },
   {
     title: "Adaptive Discourse",
     description: "Async text-based interviews that evolve based on candidate responses.",
     icon: Mic2,
-    color: "bg-tertiary",
-    id: "03"
+    iconColor: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+    borderColor: "border-amber-500/20"
   },
   {
     title: "Synthesis Engine",
     description: "Data-dense intelligence reports providing surgical insights on every candidate.",
     icon: FileCheck,
-    color: "bg-quaternary",
-    id: "04"
+    iconColor: "text-emerald-500",
+    bgColor: "bg-emerald-500/10",
+    borderColor: "border-emerald-500/20"
   }
 ];
 
 export const Features = () => {
   return (
-    <section id="features" className="py-24 md:py-32 bg-[#FFFDF5]">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="mb-20 text-center">
-          <h2 className="text-5xl md:text-7xl font-black mb-6 tracking-tighter">Capabilities.</h2>
-          <p className="text-xl font-bold opacity-60 max-w-2xl mx-auto">
-            Everything you need to automate your hiring pipeline and find the perfect fit.
+    <section id="features" className="py-24 md:py-32 bg-muted/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-16 text-center space-y-4">
+          <Badge variant="outline" className="px-3 py-1 border-primary/20 text-primary bg-primary/5 uppercase tracking-widest text-[10px] font-bold">
+            Features & Capabilities
+          </Badge>
+          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight">The Next-Gen Hiring Stack.</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed">
+            Everything you need to automate your hiring pipeline, eliminate bias, and find the perfect fit for your team.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, index) => (
-            <div
-              key={index}
+            <Card 
+              key={index} 
               className={cn(
-                "group relative p-10 bg-white border-2 border-[#1E293B] rounded-3xl shadow-pop-lg transition-all duration-300 hover:rotate-[-1deg] hover:scale-[1.02]"
+                "group relative overflow-hidden border-none shadow-sm hover:shadow-md transition-all duration-300 bg-background",
               )}
             >
-              {/* Half-in/half-out icon */}
-              <div className={cn(
-                "absolute -top-10 left-10 h-20 w-20 rounded-full border-2 border-[#1E293B] shadow-pop flex items-center justify-center group-hover:rotate-12 transition-transform",
-                feature.color
-              )}>
-                <feature.icon className="text-white h-10 w-10" strokeWidth={3} />
-              </div>
-              
-              <div className="mt-8">
-                <span className="font-black text-6xl opacity-10 absolute top-8 right-10 leading-none">{feature.id}</span>
-                <h3 className="text-3xl font-black mb-6 mt-4">{feature.title}</h3>
-                <p className="text-xl font-medium leading-relaxed opacity-80">
+              <div className={cn("absolute top-0 left-0 w-1 h-full opacity-50", feature.iconColor.replace('text-', 'bg-'))} />
+              <CardHeader className="pb-4">
+                <div className={cn(
+                  "h-12 w-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300",
+                  feature.bgColor
+                )}>
+                  <feature.icon className={cn("h-6 w-6", feature.iconColor)} />
+                </div>
+                <CardTitle className="text-xl font-bold">{feature.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-sm font-medium leading-relaxed text-muted-foreground">
                   {feature.description}
-                </p>
-              </div>
-            </div>
+                </CardDescription>
+                
+                <ul className="mt-6 space-y-2">
+                  {["Enterprise ready", "99.9% accuracy"].map((item, i) => (
+                    <li key={i} className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground/70 uppercase tracking-tight">
+                      <CheckCircle2 size={12} className={feature.iconColor} />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
