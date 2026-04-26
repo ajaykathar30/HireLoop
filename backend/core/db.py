@@ -6,8 +6,13 @@ from core.config import settings
 
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=False,        # set True temporarily if you want to see SQL queries in terminal
-    pool_pre_ping=True # auto-reconnects if Supabase drops the connection
+    echo=False,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    connect_args={
+        "command_timeout": 60,
+        "timeout": 60
+    }
 )
 
 AsyncSessionLocal = sessionmaker(

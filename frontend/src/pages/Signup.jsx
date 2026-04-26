@@ -219,6 +219,7 @@ const Signup = () => {
                     type="password"
                     placeholder="••••••••"
                     required
+                    minLength={8}
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                     className="pl-10 h-11 border-muted-foreground/20 focus-visible:ring-primary/20"

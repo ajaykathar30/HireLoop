@@ -5,9 +5,11 @@ import Home from "./pages/Home";
 import CandidateHome from "./pages/CandidateHome";
 import CompanyJobs from "./pages/CompanyJobs";
 import PostJob from "./pages/PostJob";
+import JobApplicants from "./pages/JobApplicants";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import InterviewSession from "./pages/InterviewSession";
 
 function App() {
   // Ensure we're selecting from state.auth correctly
@@ -36,6 +38,10 @@ function App() {
         {/* Recruiter Routes */}
         <Route path="/company/jobs" element={<CompanyJobs />} />
         <Route path="/company/jobs/create" element={<PostJob />} />
+        <Route path="/company/jobs/:jobId/applicants" element={<JobApplicants />} />
+
+        {/* Interview Room */}
+        <Route path="/interview/:sessionId" element={<InterviewSession />} />
 
         {/* Common Routes */}
         <Route path="/profile" element={<Profile />} />

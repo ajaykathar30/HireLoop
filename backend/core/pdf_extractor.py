@@ -1,12 +1,14 @@
 # pip install pypdf httpx
 import httpx
 from pypdf import PdfReader
+
 from io import BytesIO
 
 async def extract_text_from_pdf(pdf_url: str) -> str:
     """
     Downloads a PDF from a URL and extracts all text.
     """
+    
     async with httpx.AsyncClient() as client:
         response = await client.get(pdf_url)
         if response.status_code != 200:

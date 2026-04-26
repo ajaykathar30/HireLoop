@@ -153,7 +153,12 @@ const CompanyJobs = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon-sm" className="h-8 w-8 hover:text-primary">
+                        <Button 
+                          variant="ghost" 
+                          size="icon-sm" 
+                          className="h-8 w-8 hover:text-primary"
+                          onClick={() => navigate(`/company/jobs/${job.id}/applicants`)}
+                        >
                           <Eye size={16} />
                         </Button>
                         <Button variant="ghost" size="icon-sm" className="h-8 w-8 hover:text-primary">

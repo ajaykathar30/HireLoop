@@ -6,6 +6,7 @@ from schemas.candidate import CandidateUpdate
 from core.cloudinary import upload_file
 from core.pdf_extractor import extract_text_from_pdf
 from core.embeddings import generate_embedding
+from pipeline.agents.resume_parser import parse_resume_text
 import uuid
 
 async def update_candidate(db: AsyncSession, user_id: uuid.UUID, data: CandidateUpdate, resume_file: UploadFile = None):
@@ -31,15 +32,21 @@ async def update_candidate(db: AsyncSession, user_id: uuid.UUID, data: Candidate
         )
         candidate.resume_url = resume_url
         
-        # New requirements: Extract text and generate embedding
+        # New requirements: Extract text, parse details and generate embedding
         try:
             raw_text = await extract_text_from_pdf(resume_url)
             candidate.resume_text = raw_text
             
+            # 1. Parse structured details (Skills, Exp)
+            parsed_data = await parse_resume_text(raw_text)
+            candidate.skills = parsed_data.skills
+            candidate.experience_years = parsed_data.experience_years
+            
+            # 2. Generate Gemini Embeddings
             embedding = await generate_embedding(raw_text)
             candidate.resume_embedding = embedding
         except Exception as e:
-            print(f"Error processing resume PDF/Embedding: {e}")
+            print(f"Error processing resume PDF/AI: {e}")
             # We still allow the update even if AI processing fails, 
             # but in production you might want stricter error handling.
             pass

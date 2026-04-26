@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import Optional, List, Any
 from sqlmodel import Field, SQLModel, Column
 from sqlalchemy import func, TIMESTAMP
 from pgvector.sqlalchemy import Vector
+from pydantic import  field_serializer
+import numpy as np
 
 def utcnow():
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -41,9 +43,15 @@ class Job(SQLModel, table=True):
         default=None
     )
 
-    job_embedding: Optional[List[float]] = Field(
+    job_embedding: Optional[Any] = Field(
         sa_column=Column(Vector(768)), 
         default=None
     )
+
+    @field_serializer("job_embedding")
+    def serialize_embedding(self, v: Any) -> Any:
+        if isinstance(v, np.ndarray):
+            return v.tolist()
+        return v
 
     created_at: datetime = Field(default_factory=utcnow)

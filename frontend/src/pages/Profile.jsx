@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   User, 
   Mail, 
@@ -27,15 +28,24 @@ import {
   Plus,
   ExternalLink,
   MapPin,
-  Info
+  Info,
+  Briefcase,
+  Play,
+  Clock,
+  CheckCircle2
 } from "lucide-react";
 import { useSelector } from "react-redux";
-import { authApi, candidateApi, companyApi } from "../lib/api";
+import { authApi, candidateApi, companyApi, applicationApi, interviewApi } from "../lib/api";
+import { useNavigate } from 'react-router-dom';
 import toast from "react-hot-toast";
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { user: authUser, role } = useSelector((state) => state.auth);
   const [profile, setProfile] = useState(null);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [open, setOpen] = useState(false);
@@ -46,7 +56,10 @@ const Profile = () => {
 
   useEffect(() => {
     fetchProfile();
-  }, []);
+    if (role === 'candidate') {
+        fetchApplications();
+    }
+  }, [role]);
 
   const fetchProfile = async () => {
     try {
@@ -60,6 +73,25 @@ const Profile = () => {
       toast.error("Failed to fetch profile details");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchApplications = async () => {
+    try {
+      const response = await applicationApi.getMyApplications();
+      setApplications(response.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleStartInterview = async (appId) => {
+    try {
+        const response = await interviewApi.getSessionByAppId(appId);
+        const session = response.data;
+        navigate(`/interview/${session.id}`);
+    } catch (err) {
+        toast.error("Interview session not ready yet. Please wait.");
     }
   };
 
@@ -103,20 +135,6 @@ const Profile = () => {
     );
   }
 
-  // Final check if no profile exists yet
-  if (!profile && !loading) {
-    return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
-            <div className="flex flex-col items-center justify-center py-32">
-                <p className="text-xl font-bold text-muted-foreground">No profile data found.</p>
-                <Button onClick={() => setOpen(true)} className="mt-4">Create Profile</Button>
-            </div>
-            <Footer />
-        </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background font-sans">
       <Navbar />
@@ -130,43 +148,33 @@ const Profile = () => {
             <div className="px-8 pb-8">
               <div className="flex flex-col md:flex-row md:items-end justify-between -mt-16 gap-6">
                 <div className="flex flex-col md:flex-row items-end gap-6">
-                  <div className="relative group">
-                    <Avatar className="h-40 w-40 border-8 border-background rounded-[40px] shadow-xl bg-background">
-                      <AvatarImage src={role === 'company' ? profile?.logo_url : ''} className="object-cover" />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-5xl font-black rounded-[32px]">
-                        {role === 'company' ? profile?.name?.[0] : profile?.full_name?.[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
+                  <Avatar className="h-40 w-40 border-8 border-background rounded-[40px] shadow-xl bg-background">
+                    <AvatarImage src={role === 'company' ? profile?.logo_url : ''} className="object-cover" />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-5xl font-black rounded-[32px]">
+                      {role === 'company' ? profile?.name?.[0] : profile?.full_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
                   
                   <div className="mb-2 space-y-1">
                     <div className="flex items-center gap-3">
                       <h1 className="text-4xl font-black tracking-tight">
                         {role === 'company' ? (profile?.name || "Company Name") : (profile?.full_name || "User Name")}
                       </h1>
-                      <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter border border-primary/20">
-                        {role || 'user'}
-                      </div>
+                      <Badge className="bg-primary/10 text-primary uppercase text-[10px] font-black tracking-tighter border-primary/20">
+                        {role}
+                      </Badge>
                     </div>
                     <p className="text-muted-foreground font-bold flex items-center gap-2 text-lg">
                       <Mail size={18} className="text-primary/60" />
                       {authUser?.email}
                     </p>
-                    {role === 'company' && profile?.industry && (
-                      <p className="text-sm font-bold text-primary flex items-center gap-2">
-                        <Building2 size={16} />
-                        {profile.industry}
-                      </p>
-                    )}
                   </div>
                 </div>
                 
                 <Dialog open={open} onOpenChange={setOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="lg" className="font-bold shadow-lg shadow-primary/20 h-12 px-8 rounded-2xl">
-                      <Pencil size={18} className="mr-2" />
-                      Edit Profile
-                    </Button>
+                  <DialogTrigger className="inline-flex items-center justify-center rounded-2xl bg-primary px-8 h-12 text-lg font-bold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors cursor-pointer">
+                    <Pencil size={18} className="mr-2" />
+                    Edit Profile
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px] rounded-[32px]">
                     <DialogHeader>
@@ -233,12 +241,7 @@ const Profile = () => {
                       
                       <DialogFooter className="pt-4">
                         <Button type="submit" disabled={updating} className="w-full h-12 font-bold text-lg rounded-xl">
-                          {updating ? (
-                            <div className="flex items-center gap-2">
-                              <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
-                              Saving...
-                            </div>
-                          ) : "Save Profile Changes"}
+                          {updating ? "Saving..." : "Save Profile Changes"}
                         </Button>
                       </DialogFooter>
                     </form>
@@ -248,150 +251,130 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Details Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-              {/* About Section */}
-              <section className="bg-card border rounded-[32px] p-8 shadow-sm">
-                <h3 className="text-xl font-black mb-6 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600">
-                    <Info size={20} />
-                  </div>
-                  {role === 'company' ? 'About Our Company' : 'Professional Summary'}
-                </h3>
-                <div className="text-muted-foreground font-medium leading-relaxed text-lg whitespace-pre-wrap">
-                  {role === 'company' 
-                    ? (profile?.description || "No description provided yet. Let candidates know what your company is all about by clicking the edit button.")
-                    : (profile?.resume_text ? (profile.resume_text.substring(0, 500) + "...") : "Upload your resume to see your parsed profile summary here.")
-                  }
-                </div>
-              </section>
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="bg-muted/50 p-1 rounded-2xl mb-8">
+              <TabsTrigger value="overview" className="rounded-xl font-bold px-6">Overview</TabsTrigger>
+              {role === 'candidate' && <TabsTrigger value="applications" className="rounded-xl font-bold px-6">My Applications</TabsTrigger>}
+            </TabsList>
 
-              {/* Statistics/Impact Section */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="bg-emerald-500/5 border border-emerald-500/20 p-6 rounded-3xl text-center">
-                  <p className="text-3xl font-black text-emerald-600 mb-1">
-                    {role === 'company' ? '24' : '12'}
-                  </p>
-                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-600/70">
-                    {role === 'company' ? 'Active Jobs' : 'Applications'}
-                  </p>
-                </div>
-                <div className="bg-blue-500/5 border border-blue-500/20 p-6 rounded-3xl text-center">
-                  <p className="text-3xl font-black text-blue-600 mb-1">
-                    {role === 'company' ? '1.2k' : '98%'}
-                  </p>
-                  <p className="text-xs font-bold uppercase tracking-wider text-blue-600/70">
-                    {role === 'company' ? 'Applications' : 'Profile Match'}
-                  </p>
-                </div>
-                <div className="bg-purple-500/5 border border-purple-500/20 p-6 rounded-3xl text-center">
-                  <p className="text-3xl font-black text-purple-600 mb-1">
-                    {role === 'company' ? '5.0' : '4'}
-                  </p>
-                  <p className="text-xs font-bold uppercase tracking-wider text-purple-600/70">
-                    {role === 'company' ? 'Rating' : 'Offers'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar Details */}
-            <aside className="space-y-8">
-              <section className="bg-card border rounded-[32px] p-8 shadow-sm">
-                <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6 pb-2 border-b">
-                  Contact Details
-                </h3>
-                <div className="space-y-6">
-                  {role === 'company' ? (
-                    <>
-                      <div className="flex items-start gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                          <Globe size={18} />
-                        </div>
-                        <div className="overflow-hidden">
-                          <p className="text-[10px] uppercase font-black text-muted-foreground mb-0.5 tracking-tighter">Website</p>
-                          <a href={profile?.website} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-primary hover:underline flex items-center gap-1">
-                            {profile?.website?.replace(/^https?:\/\//, '') || "Not set"}
-                            <ExternalLink size={12} />
-                          </a>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                          <Building2 size={18} />
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase font-black text-muted-foreground mb-0.5 tracking-tighter">Industry</p>
-                          <p className="text-sm font-bold">{profile?.industry || "Not specified"}</p>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-start gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                          <Phone size={18} />
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase font-black text-muted-foreground mb-0.5 tracking-tighter">Phone</p>
-                          <p className="text-sm font-bold">{profile?.phone || "Not set"}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                          <Linkedin size={18} />
-                        </div>
-                        <div className="overflow-hidden">
-                          <p className="text-[10px] uppercase font-black text-muted-foreground mb-0.5 tracking-tighter">LinkedIn</p>
-                          <a href={profile?.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-primary hover:underline truncate block">
-                            {profile?.linkedin_url || "Not set"}
-                          </a>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                      <MapPin size={18} />
+            <TabsContent value="overview" className="space-y-8 outline-none">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 space-y-8">
+                        <section className="bg-card border rounded-[32px] p-8 shadow-sm">
+                            <h3 className="text-xl font-black mb-6 flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600">
+                                    <Info size={20} />
+                                </div>
+                                {role === 'company' ? 'About Our Company' : 'Professional Summary'}
+                            </h3>
+                            <div className="text-muted-foreground font-medium leading-relaxed text-lg whitespace-pre-wrap">
+                            {role === 'company' 
+                                ? (profile?.description || "No description provided.")
+                                : (profile?.resume_text ? (profile.resume_text.substring(0, 500) + "...") : "Upload your resume to see your profile summary.")
+                            }
+                            </div>
+                        </section>
                     </div>
-                    <div>
-                      <p className="text-[10px] uppercase font-black text-muted-foreground mb-0.5 tracking-tighter">Location</p>
-                      <p className="text-sm font-bold">Global / Remote</p>
-                    </div>
-                  </div>
-                </div>
-              </section>
 
-              {role === 'candidate' && (
-                <section className="bg-card border rounded-[32px] p-8 shadow-sm">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6 pb-2 border-b">
-                    Technical Assets
-                  </h3>
-                  <div className="bg-muted/30 border border-dashed rounded-2xl p-6 flex flex-col items-center text-center gap-4">
-                    {profile?.resume_url ? (
-                      <>
-                        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                          <FileText size={24} />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold">Resume Uploaded</p>
-                          <a href={profile.resume_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-black uppercase tracking-widest mt-1 block">View PDF</a>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
-                          <Plus size={24} />
-                        </div>
-                        <p className="text-sm font-bold text-muted-foreground italic">Add your resume</p>
-                      </>
-                    )}
-                  </div>
-                </section>
-              )}
-            </aside>
-          </div>
+                    <aside className="space-y-8">
+                        <section className="bg-card border rounded-[32px] p-8 shadow-sm">
+                            <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6 pb-2 border-b">
+                            Details
+                            </h3>
+                            <div className="space-y-6">
+                            {role === 'company' ? (
+                                <div className="flex items-start gap-4">
+                                    <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                                        <Globe size={18} />
+                                    </div>
+                                    <div className="overflow-hidden">
+                                        <p className="text-[10px] uppercase font-black text-muted-foreground mb-0.5 tracking-tighter">Website</p>
+                                        <p className="text-sm font-bold text-primary truncate">{profile?.website || "Not set"}</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-start gap-4">
+                                    <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                                        <Briefcase size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] uppercase font-black text-muted-foreground mb-0.5 tracking-tighter">Experience</p>
+                                        <p className="text-sm font-bold">{profile?.experience_years || 0} Years</p>
+                                    </div>
+                                </div>
+                            )}
+                            </div>
+                        </section>
+                    </aside>
+                </div>
+            </TabsContent>
+
+            <TabsContent value="applications" className="space-y-6 outline-none">
+                {applications.length === 0 ? (
+                    <div className="py-20 text-center border-2 border-dashed rounded-[32px] bg-muted/5">
+                        <p className="text-muted-foreground font-bold italic">You haven't applied to any jobs yet.</p>
+                        <Button variant="link" onClick={() => navigate('/candidate-home')} className="mt-2">Browse Jobs</Button>
+                    </div>
+                ) : (
+                    <div className="grid gap-4">
+                        {applications.map((app) => (
+                            <Card key={app.id} className="border-muted-foreground/10 rounded-[24px] overflow-hidden hover:shadow-md transition-shadow">
+                                <CardContent className="p-6">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                        <div className="flex items-center gap-4">
+                                            <Avatar className="h-12 w-12 rounded-xl border bg-muted/20">
+                                                <AvatarImage src={app.company_logo} />
+                                                <AvatarFallback className="font-bold text-primary bg-primary/5">
+                                                    {app.company_name?.substring(0,2).toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <h4 className="font-black text-lg leading-tight">{app.job_title}</h4>
+                                                <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold mt-1">
+                                                    <Building2 size={12} /> {app.company_name}
+                                                    <span>•</span>
+                                                    <Clock size={12} /> {new Date(app.applied_at).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-4">
+                                            <Badge className={`uppercase text-[10px] font-black px-3 py-1 rounded-full ${
+                                                app.status === 'shortlisted' 
+                                                ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' 
+                                                : app.status === 'rejected'
+                                                ? 'bg-red-500/10 text-red-600 border-red-500/20'
+                                                : 'bg-muted text-muted-foreground'
+                                            }`}>
+                                                {app.status}
+                                            </Badge>
+
+                                            {app.status === 'shortlisted' && (
+                                                <Button 
+                                                    size="sm" 
+                                                    className="font-black rounded-xl bg-primary shadow-lg shadow-primary/20 animate-pulse hover:animate-none"
+                                                    onClick={() => handleStartInterview(app.id)}
+                                                >
+                                                    <Play size={14} className="mr-1.5 fill-current" />
+                                                    Start AI Interview
+                                                </Button>
+                                            )}
+
+                                            {app.status === 'interviewed' && (
+                                                <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-sm">
+                                                    <CheckCircle2 size={18} />
+                                                    Interview Done
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
 

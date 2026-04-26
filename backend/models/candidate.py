@@ -1,10 +1,12 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import Optional, List, Any
 from sqlmodel import Field, SQLModel, Column
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy import String
 from pgvector.sqlalchemy import Vector
+from pydantic import field_validator, field_serializer
+import numpy as np
 
 
 def utcnow():
@@ -29,9 +31,15 @@ class Candidate(SQLModel, table=True):
     
     # New fields for pipeline
     skills: Optional[List[str]] = Field(default=None, sa_column=Column(ARRAY(String)))
-    resume_embedding: Optional[List[float]] = Field(
+    resume_embedding: Optional[Any] = Field(
         sa_column=Column(Vector(768)),
         default=None
     )
+
+    @field_serializer("resume_embedding")
+    def serialize_embedding(self, v: Any) -> Any:
+        if isinstance(v, np.ndarray):
+            return v.tolist()
+        return v
     
     created_at: datetime = Field(default_factory=utcnow)

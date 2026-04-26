@@ -1,24 +1,22 @@
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from core.config import settings
+from dotenv import load_dotenv
 import os
+load_dotenv()
 
 def get_embeddings_model():
-    api_key = settings.GOOGLE_API_KEY
-    if not api_key:
-        api_key = os.getenv("GOOGLE_API_KEY")
-    
-    if not api_key:
-        raise ValueError("GOOGLE_API_KEY not found in settings or environment")
-        
-    return GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001",
-        google_api_key=api_key
-    )
+    return GoogleGenerativeAIEmbeddings( 
+    model="models/gemini-embedding-001", 
+    google_api_key=os.getenv("GOOGLE_API_KEY")
+)
 
 async def generate_embedding(text: str) -> list[float]:
     """
     Generates a 768-dimensional embedding for the given text using Gemini via LangChain.
+    Gemini-embedding-001 natively produces 3072 dimensions, so we truncate to 768.
     """
     model = get_embeddings_model()
+    # LangChain's GoogleGenerativeAIEmbeddings might not support 'task_type' or 'output_dimensionality' 
+    # directly in query methods yet, so we manually truncate to match DB schema.
     embedding = await model.aembed_query(text)
-    return embedding
+    # Ensure result is a standard list for JSON serialization
+    return list(embedding[:768])

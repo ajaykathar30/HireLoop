@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     # AI Keys
     GOOGLE_API_KEY: str
     HF_API_KEY: str
+    SARVAM_API_KEY: Optional[str] = None
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

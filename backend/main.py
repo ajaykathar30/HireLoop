@@ -1,11 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import ENCODERS_BY_TYPE
+import numpy as np
 from contextlib import asynccontextmanager
+
 from routers.auth  import router as auth_router
 from routers.candidates import router as candidates_router
 from routers.companies import router as companies_router
 from routers.jobs import router as jobs_router
 from routers.applications import router as applications_router
+from routers.interviews import router as interviews_router
+from routers.notifications import router as notifications_router
 from core.scheduler import start_scheduler
 
 @asynccontextmanager
@@ -24,9 +29,12 @@ app = FastAPI(
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
 
+# Register NumPy encoder globally for all responses
+ENCODERS_BY_TYPE[np.ndarray] = lambda obj: obj.tolist()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origin_regex="http://(localhost|127\.0\.0\.1):[0-9]+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,6 +48,8 @@ app.include_router(candidates_router)
 app.include_router(companies_router)
 app.include_router(jobs_router)
 app.include_router(applications_router)
+app.include_router(interviews_router)
+app.include_router(notifications_router)
 
 @app.get("/")
 def root():

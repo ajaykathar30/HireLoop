@@ -27,7 +27,7 @@ async def create_job(db: AsyncSession, user_id: uuid.UUID, data: JobCreate):
         # This satisfies the "using langchain in the job" requirement
         try:
             llm = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash",
+                model="gemini-3-flash-preview",
                 google_api_key=settings.GOOGLE_API_KEY,
                 temperature=0
             )
@@ -82,16 +82,21 @@ async def create_job(db: AsyncSession, user_id: uuid.UUID, data: JobCreate):
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 async def get_company_jobs(db: AsyncSession, user_id: uuid.UUID):
+    logger.info(f"Fetching jobs for user_id: {user_id}")
     statement = select(Company).where(Company.user_id == user_id)
     result = await db.execute(statement)
     company = result.scalar_one_or_none()
     
     if not company:
+        logger.warning(f"No company profile found for user_id: {user_id}")
         raise HTTPException(status_code=403, detail="Only companies can access their jobs")
     
+    logger.info(f"Found company {company.name} (ID: {company.id}). Fetching jobs...")
     statement = select(Job).where(Job.company_id == company.id).order_by(Job.created_at.desc())
     result = await db.execute(statement)
-    return result.scalars().all()
+    jobs = result.scalars().all()
+    logger.info(f"Found {len(jobs)} jobs for company {company.id}")
+    return jobs
 
 async def get_all_jobs(db: AsyncSession):
     # Select job and join with company to get company name/logo

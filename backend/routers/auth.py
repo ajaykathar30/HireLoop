@@ -37,11 +37,11 @@ async def login(
         value=access_token,
         httponly=True,
         max_age=24 * 3600, # 24 hours
-        samesite="lax",
-        secure=False # Set to True in production with HTTPS
+        samesite="none",
+        secure=True, # Required for samesite="none"
     )
     
-    return {"message": "Login successful", "role": user.role}
+    return {"message": "Login successful", "role": user.role, "user": user}
 
 @router.post("/logout")
 async def logout(response: Response):

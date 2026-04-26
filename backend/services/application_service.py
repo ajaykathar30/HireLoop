@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from models.application import Application
 from models.job import Job
 from models.candidate import Candidate
+from models.company import Company
 from schemas.application import ApplicationCreate
 from datetime import datetime, timezone
 import uuid
@@ -72,3 +73,58 @@ async def apply_to_job(db: AsyncSession, user_id: uuid.UUID, data: ApplicationCr
     await db.refresh(new_app)
     
     return new_app
+    
+async def get_candidate_applications(db: AsyncSession, user_id: uuid.UUID):
+    # 1. Get candidate record
+    candidate_stmt = select(Candidate).where(Candidate.user_id == user_id)
+    result = await db.execute(candidate_stmt)
+    candidate = result.scalar_one_or_none()
+    
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    # 2. Fetch applications with Job and Company info
+    # We join Application -> Job -> Company
+    statement = (
+        select(Application, Job, Company)
+        .join(Job, Application.job_id == Job.id)
+        .join(Company, Job.company_id == Company.id)
+        .where(Application.candidate_id == candidate.id)
+        .order_by(Application.applied_at.desc())
+    )
+    
+    result = await db.execute(statement)
+    
+    my_apps = []
+    for app, job, company in result:
+        data = app.model_dump()
+        data["job_title"] = job.title
+        data["company_name"] = company.name
+        data["company_logo"] = company.logo_url
+        data["location"] = job.location
+        my_apps.append(data)
+        
+    return my_apps
+        
+async def get_job_applications(db: AsyncSession, job_id: uuid.UUID):
+    """
+    Returns all applications for a specific job with candidate details.
+    """
+    statement = (
+        select(Application, Candidate)
+        .join(Candidate, Application.candidate_id == Candidate.id)
+        .where(Application.job_id == job_id)
+        .order_by(Application.fit_score.desc())
+    )
+    
+    result = await db.execute(statement)
+    
+    applicants = []
+    for app, candidate in result:
+        data = app.model_dump()
+        data["candidate_name"] = candidate.full_name
+        data["candidate_skills"] = candidate.skills
+        data["candidate_experience"] = candidate.experience_years
+        applicants.append(data)
+        
+    return applicants

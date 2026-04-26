@@ -14,7 +14,8 @@ import {
   Bookmark,
   ChevronRight,
   Filter,
-  ArrowRight
+  ArrowRight,
+  FileText
 } from "lucide-react";
 import { 
   Card, 
@@ -24,13 +25,24 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { jobApi } from "../lib/api";
+import { jobApi, applicationApi, interviewApi } from "../lib/api";
+import toast from 'react-hot-toast';
 
 const formatRelativeTime = (date) => {
   if (!date) return "Recently";
@@ -47,10 +59,32 @@ const formatRelativeTime = (date) => {
 const CandidateHome = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ applications: 0, interviews: 0 });
+  
+  // Application Modal State
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [coverNote, setCoverNote] = useState("");
+  const [applying, setApplying] = useState(false);
 
   useEffect(() => {
     fetchJobs();
+    fetchStats();
   }, []);
+
+  const fetchStats = async () => {
+    try {
+      const [appRes, intRes] = await Promise.all([
+        applicationApi.getMyApplications(),
+        interviewApi.getMySessions()
+      ]);
+      setStats({
+        applications: appRes.data?.length || 0,
+        interviews: intRes.data?.length || 0
+      });
+    } catch (err) {
+      console.error("Failed to fetch stats:", err);
+    }
+  };
 
   const fetchJobs = async () => {
     try {
@@ -59,8 +93,28 @@ const CandidateHome = () => {
       setJobs(response.data);
     } catch (err) {
       console.error("Failed to fetch jobs:", err);
+      toast.error("Could not load jobs");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApply = async () => {
+    if (!selectedJob) return;
+    
+    setApplying(true);
+    try {
+      await applicationApi.apply({
+        job_id: selectedJob.id,
+        cover_note: coverNote
+      });
+      toast.success(`Successfully applied for ${selectedJob.title}!`);
+      setSelectedJob(null);
+      setCoverNote("");
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Application failed");
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -88,13 +142,13 @@ const CandidateHome = () => {
           <div className="flex gap-4">
             <Card className="shadow-sm border-muted-foreground/10 bg-muted/5">
               <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                <span className="text-2xl font-bold text-primary">12</span>
+                <span className="text-2xl font-bold text-primary">{stats.applications}</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Applications</span>
               </CardContent>
             </Card>
             <Card className="shadow-sm border-muted-foreground/10 bg-muted/5">
               <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                <span className="text-2xl font-bold text-primary">5</span>
+                <span className="text-2xl font-bold text-primary">{stats.interviews}</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Interviews</span>
               </CardContent>
             </Card>
@@ -153,9 +207,6 @@ const CandidateHome = () => {
                     Saved
                   </TabsTrigger>
                 </TabsList>
-                <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                  Sort by: <span className="text-foreground cursor-pointer hover:underline">Relevance</span>
-                </div>
               </div>
 
               <TabsContent value="recommended" className="mt-0 space-y-4 outline-none">
@@ -184,8 +235,8 @@ const CandidateHome = () => {
                                 </div>
                             </div>
                             </div>
-                            <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 border-emerald-500/20 px-2 py-0.5 font-bold">
-                            95% Match
+                            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-2 py-0.5 font-bold">
+                                AI Match
                             </Badge>
                         </div>
                         </CardHeader>
@@ -196,13 +247,9 @@ const CandidateHome = () => {
                                     {job.job_type}
                                 </Badge>
                             )}
-                            <Badge variant="outline" className="font-medium text-[10px] px-2 py-0.5 rounded-md">
-                                AI Analyzed
-                            </Badge>
                         </div>
                         <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground">
                             <span className="flex items-center gap-1.5"><DollarSign size={14} /> {job.salary_min && job.salary_max ? `$${job.salary_min/1000}k - $${job.salary_max/1000}k` : "Salary Undisclosed"}</span>
-                            <span className="flex items-center gap-1.5"><Briefcase size={14} /> {job.job_type || "Full-time"}</span>
                             <span className="flex items-center gap-1.5"><Clock size={14} /> {formatRelativeTime(job.created_at)}</span>
                         </div>
                         </CardContent>
@@ -212,7 +259,11 @@ const CandidateHome = () => {
                             <Bookmark size={18} className="mr-2" />
                             Save
                         </Button>
-                        <Button size="sm" className="h-9 px-6 font-bold">
+                        <Button 
+                          size="sm" 
+                          className="h-9 px-6 font-bold"
+                          onClick={() => setSelectedJob(job)}
+                        >
                             Apply Now
                         </Button>
                         </CardFooter>
@@ -223,12 +274,6 @@ const CandidateHome = () => {
                         <p className="text-muted-foreground font-bold italic">No jobs found matching your profile yet.</p>
                         <Button variant="link" onClick={fetchJobs} className="mt-2 text-primary">Refresh Feed</Button>
                     </div>
-                )}
-                
-                {jobs.length > 0 && (
-                    <Button variant="ghost" className="w-full h-12 text-muted-foreground hover:text-primary font-semibold">
-                    Show more results
-                    </Button>
                 )}
               </TabsContent>
             </Tabs>
@@ -252,7 +297,6 @@ const CandidateHome = () => {
                   <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
                     <div className="h-full bg-primary w-[85%] rounded-full" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground font-medium">Add a portfolio link to reach 100%</p>
                 </div>
                 
                 <Separator />
@@ -267,46 +311,72 @@ const CandidateHome = () => {
                     ))}
                   </div>
                 </div>
-                
-                <Button variant="outline" className="w-full text-xs font-bold h-9">
-                  Enhance My Profile
-                </Button>
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-bold">Featured Companies</CardTitle>
-                <CardDescription className="text-xs font-medium">Top recruiters hiring this week</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[280px]">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="flex items-center justify-between px-6 py-4 border-b last:border-none hover:bg-muted/20 transition-colors cursor-pointer group">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9 border rounded-md">
-                          <AvatarFallback className="text-xs font-bold">T{i}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-bold group-hover:text-primary transition-colors">TechNova Labs</p>
-                          <p className="text-[10px] font-medium text-muted-foreground">12 Active Roles</p>
-                        </div>
-                      </div>
-                      <ChevronRight size={16} className="text-muted-foreground group-hover:text-foreground transition-transform group-hover:translate-x-0.5" />
-                    </div>
-                  ))}
-                </ScrollArea>
-              </CardContent>
-              <CardFooter className="p-4 bg-muted/10 border-t">
-                <Button variant="link" className="w-full h-auto p-0 text-xs font-bold text-muted-foreground hover:text-primary group">
-                  View all companies
-                  <ArrowRight size={14} className="ml-1 transition-transform group-hover:translate-x-1" />
-                </Button>
-              </CardFooter>
-            </Card>
           </div>
         </div>
       </main>
+
+      {/* Application Dialog */}
+      <Dialog open={!!selectedJob} onOpenChange={(open) => !open && setSelectedJob(null)}>
+        <DialogContent className="sm:max-w-[500px] rounded-[24px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black">Apply for Position</DialogTitle>
+            <DialogDescription className="font-medium">
+              You are applying to <span className="text-primary font-bold">{selectedJob?.title}</span> at <span className="font-bold">{selectedJob?.company_name}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex items-start gap-3">
+              <div className="mt-1 bg-primary/20 p-2 rounded-lg">
+                <FileText size={18} className="text-primary" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold">Your Profile is Ready</p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  We'll use your current resume and AI profile for this application.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="coverNote" className="font-bold">Cover Note (Optional)</Label>
+              <Textarea 
+                id="coverNote"
+                placeholder="Briefly explain why you're a great fit..."
+                className="min-h-[120px] rounded-xl focus-visible:ring-primary/20"
+                value={coverNote}
+                onChange={(e) => setCoverNote(e.target.value)}
+              />
+              <p className="text-[10px] text-muted-foreground font-medium">Max 500 characters recommended.</p>
+            </div>
+          </div>
+
+          <DialogFooter className="sm:justify-between gap-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => setSelectedJob(null)}
+              className="font-bold rounded-xl"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleApply} 
+              disabled={applying}
+              className="h-11 px-8 font-bold rounded-xl shadow-lg shadow-primary/20"
+            >
+              {applying ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+                  Applying...
+                </div>
+              ) : "Submit Application"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

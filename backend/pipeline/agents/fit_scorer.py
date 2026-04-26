@@ -16,7 +16,7 @@ async def score_fit(resume_text: str, job_description: str, job_requirements: st
     """
     api_key = os.getenv("GOOGLE_API_KEY")
     llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
+        model="gemini-3-flash-preview",
         google_api_key=api_key,
         temperature=0
     )
