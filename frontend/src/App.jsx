@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import InterviewSession from "./pages/InterviewSession";
+import TestInterview from "./mock_interview_test/TestInterview";
 
 // Route guard component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -88,6 +89,9 @@ function App() {
         } />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        
+        {/* Logic Test Route */}
+        <Route path="/test-logic" element={<TestInterview />} />
       </Routes>
     </BrowserRouter>
   );

@@ -112,8 +112,6 @@ async def save_answer_node(state: InterviewState, config: RunnableConfig):
     audio_bytes = state.get("last_answer_audio")
     if not transcript and not state.get("is_timeout") and audio_bytes:
         transcript = await speech_to_text(audio_bytes)
-        # Background upload to Cloudinary
-        asyncio.create_task(upload_file(audio_bytes, "HireLoop/CandidateAudio"))
         
     transcript = transcript or "No answer provided"
 

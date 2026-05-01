@@ -9,7 +9,6 @@ dependencies = [
     "asyncpg>=0.31.0",
     "bcrypt==4.0.1",
     "cloudinary>=1.44.2",
-    "docling>=2.92.0",
     "fastapi[standard-no-fastapi-cloud-cli]>=0.136.0",
     "google-generativeai>=0.8.6",
     "greenlet>=3.4.0",
@@ -28,5 +27,6 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.26",
+    "sarvamai>=0.1.28",
     "sqlmodel>=0.0.38",
 ]

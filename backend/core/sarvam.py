@@ -2,8 +2,6 @@ import httpx
 import logging
 from core.config import settings
 from typing import Optional, AsyncGenerator
-import websockets
-import json
 import base64
 
 logger = logging.getLogger(__name__)
@@ -48,82 +46,81 @@ async def text_to_speech(text: str, language_code: str = "en-IN", speaker: str =
 
 async def speech_to_text(audio_content: bytes, language_code: str = "en-IN") -> Optional[str]:
     """
-    Converts speech to text using Groq Whisper (whisper-large-v3-turbo) for ultra-low latency.
-    Expects raw audio bytes (wav).
+    Converts speech to text using Sarvam AI STT.
+    Expects raw audio bytes.
     """
-    if not settings.GROQ_API_KEY:
-        logger.error("GROQ_API_KEY not set")
+    if not settings.SARVAM_API_KEY:
+        logger.error("SARVAM_API_KEY not set")
         return None
 
-    url = "https://api.groq.com/openai/v1/audio/transcriptions"
-    headers = {
-        "Authorization": f"Bearer {settings.GROQ_API_KEY}"
-    }
-    
-    # Prepare multipart form data
-    files = {
-        "file": ("audio.webm", audio_content, "audio/webm")
-    }
-    data = {
-        "model": "whisper-large-v3-turbo",
-        # Groq expects 'en', 'es', etc.
-        "language": language_code.split("-")[0],
-        "response_format": "json"
-    }
+    from sarvamai import AsyncSarvamAI
+    client = AsyncSarvamAI(api_subscription_key=settings.SARVAM_API_KEY)
 
-    async with httpx.AsyncClient() as client:
+    try:
+        import tempfile
+        import os
+
+        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
+            tmp.write(audio_content)
+            tmp_path = tmp.name
+
         try:
-            response = await client.post(url, headers=headers, data=data, files=files, timeout=10.0)
-            if response.status_code == 200:
-                result = response.json()
-                return result.get("text")
-            else:
-                logger.error(f"Groq STT Error: {response.status_code} - {response.text}")
-        except Exception as e:
-            logger.error(f"Groq STT Exception: {e}")
-            
+            response = await client.speech_to_text.transcribe(
+                file=open(tmp_path, "rb"),  # ✅ Open as binary file object
+                model="saaras:v3",          # ✅ Use recommended model
+                language_code=language_code
+            )
+            return response.transcript      # ✅ Attribute access, not .get()
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+    except Exception as e:
+        logger.error(f"Sarvam STT Exception: {e}")
+
     return None
+
+
+from sarvamai import AsyncSarvamAI, AudioOutput, EventResponse
 
 async def stream_text_to_speech(text: str, language_code: str = "en-IN", speaker: str = "shubh") -> AsyncGenerator[bytes, None]:
     """
-    Streams text to speech using Sarvam AI via WebSocket.
-    Yields audio chunks (bytes) as they are synthesized.
+    Streams text to speech using the official Sarvam AI SDK.
     """
     if not settings.SARVAM_API_KEY:
         logger.error("SARVAM_API_KEY not set")
         return
 
-    # Use the streaming endpoint
-    url = "wss://api.sarvam.ai/text-to-speech"
-    
-    # Pass auth header
-    headers = {
-        "api-subscription-key": settings.SARVAM_API_KEY
-    }
-    
-    payload = {
-        "text": text,
-        "target_language_code": language_code,
-        "speaker": speaker,
-        "model": "bulbul:v3"
-    }
+    client = AsyncSarvamAI(api_subscription_key=settings.SARVAM_API_KEY)
 
     try:
-        async with websockets.connect(url, extra_headers=headers) as ws:
-            await ws.send(json.dumps(payload))
+        async with client.text_to_speech_streaming.connect(
+            model="bulbul:v3", 
+            send_completion_event=True
+        ) as ws:
+            # 1. Configure
+            await ws.configure(
+                target_language_code=language_code,
+                speaker=speaker,
+                output_audio_codec="wav"
+            )
+            
+            # 2. Convert text
+            await ws.convert(text)
+            
+            # 3. Flush buffer
+            await ws.flush()
+
+            # 4. Stream audio chunks
             async for message in ws:
-                if isinstance(message, str):
-                    try:
-                        data = json.loads(message)
-                        if "audio" in data:
-                            yield base64.b64decode(data["audio"])
-                        elif "error" in data:
-                            logger.error(f"Sarvam Streaming TTS Error: {data['error']}")
-                    except json.JSONDecodeError:
-                        pass
-                else:
-                    # If the websocket returns raw binary chunks
-                    yield message
+                if isinstance(message, AudioOutput):
+                    # The SDK already handles base64 decoding for us in most versions, 
+                    # but if it returns a string in message.data.audio, we decode.
+                    # Based on docs, it might be base64.
+                    yield base64.b64decode(message.data.audio)
+                elif isinstance(message, EventResponse):
+                    if message.data.event_type == "final":
+                        break
     except Exception as e:
-        logger.error(f"Sarvam Streaming TTS Exception: {e}")
+        logger.error(f"Sarvam SDK Streaming TTS Exception: {e}")
 

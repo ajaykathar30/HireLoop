@@ -12,6 +12,7 @@ from routers.applications import router as applications_router
 from routers.interviews import router as interviews_router
 from routers.notifications import router as notifications_router
 from routers.reports import router as reports_router
+from mock_interview_test.router import router as test_interview_router
 from core.scheduler import start_scheduler
 
 @asynccontextmanager
@@ -52,6 +53,7 @@ app.include_router(applications_router)
 app.include_router(interviews_router)
 app.include_router(notifications_router)
 app.include_router(reports_router)
+app.include_router(test_interview_router)
 
 @app.get("/")
 def root():
