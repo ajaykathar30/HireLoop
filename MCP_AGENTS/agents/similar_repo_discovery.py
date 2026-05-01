@@ -11,7 +11,7 @@ import logging
 
 from agents.base import run_agent
 from config import MODEL_FLASH
-from models.schemas import SimilarRepoOutput
+from mcp_models.schemas import SimilarRepoOutput
 from tools.exa_tools import search_similar_repos, search_web_context
 
 logger = logging.getLogger("recruitsight.similar_repo")

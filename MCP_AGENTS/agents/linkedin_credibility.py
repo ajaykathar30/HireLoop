@@ -10,7 +10,7 @@ import logging
 
 from agents.base import run_agent
 from config import MODEL_FLASH
-from models.linkedin_schemas import (
+from mcp_models.linkedin_schemas import (
     LinkedInCredibilityOutput,
     LinkedInProfileOutput,
 )

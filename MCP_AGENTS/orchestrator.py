@@ -17,7 +17,7 @@ import asyncio
 import logging
 import time
 
-from models.schemas import (
+from mcp_models.schemas import (
     PipelineResult,
     AgentResult,
     IngestionStatus,

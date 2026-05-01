@@ -10,7 +10,7 @@ import logging
 
 from agents.base import run_agent
 from config import MODEL_FLASH
-from models.schemas import DependencyAuditOutput
+from mcp_models.schemas import DependencyAuditOutput
 from tools.git_tools import git_show, list_files
 
 logger = logging.getLogger("recruitsight.dependency_auditor")

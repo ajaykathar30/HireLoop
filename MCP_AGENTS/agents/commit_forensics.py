@@ -10,7 +10,7 @@ import logging
 
 from agents.base import run_agent
 from config import MODEL_FLASH
-from models.schemas import CommitForensicsOutput
+from mcp_models.schemas import CommitForensicsOutput
 from tools.git_tools import git_log, git_diff_commit
 
 logger = logging.getLogger("recruitsight.commit_forensics")

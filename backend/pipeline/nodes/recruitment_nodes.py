@@ -14,6 +14,7 @@ from models.notification import Notification
 
 from pipeline.agents.resume_parser import parse_resume
 from pipeline.agents.fit_scorer import score_fit
+from pipeline.agents.mcp_bridge import get_mcp_scores
 from pipeline.ranking import rank_candidates_by_similarity
 
 # State Definition
@@ -63,13 +64,31 @@ async def score_fit_node(state: PipelineState, config: RunnableConfig):
     job = await db.get(Job, state["job_id"])
     stmt = select(Application, Candidate).join(Candidate).where(Application.id.in_(state["top_candidate_ids"]))
     result = await db.execute(stmt)
+    
     for app, candidate in result.all():
+        # 1. Resume Match Score (0-100)
         fit_result = await score_fit(candidate.resume_text, job.description, job.requirements)
-        app.fit_score = fit_result.score
-        app.fit_reasoning = fit_result.reasoning
+        resume_score = fit_result.score
+        
+        # 2. GitHub & LinkedIn Scores (0-10)
+        mcp_results = await get_mcp_scores(candidate.resume_url)
+        github_score = mcp_results["github_score"] * 10  # Scale to 0-100
+        linkedin_score = mcp_results["linkedin_score"] * 10 # Scale to 0-100
+        
+        # 3. Calculate Weighted Unified Score
+        # Weights: GitHub (45%), Resume (40%), LinkedIn (15%)
+        final_score = (resume_score * 0.40) + (github_score * 0.45) + (linkedin_score * 0.15)
+        
+        app.fit_score = int(final_score)
+        app.fit_reasoning = (
+            f"Unified Score: {int(final_score)}/100. "
+            f"(Resume: {resume_score}, Git: {int(github_score)}, LinkedIn: {int(linkedin_score)}). "
+            f"Analysis: {fit_result.reasoning}"
+        )
         db.add(app)
+        
     await db.commit()
-    return {"logs": ["Scoring complete"]}
+    return {"logs": ["Unified Scoring complete (Resume + Git + LinkedIn)"]}
 
 async def finalize_recruitment_node(state: PipelineState, config: RunnableConfig):
     print("\n--- NODE: finalize_recruitment_node ---")

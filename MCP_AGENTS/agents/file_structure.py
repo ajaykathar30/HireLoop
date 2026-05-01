@@ -10,7 +10,7 @@ import logging
 
 from agents.base import run_agent
 from config import MODEL_FLASH
-from models.schemas import FileStructureOutput
+from mcp_models.schemas import FileStructureOutput
 from tools.git_tools import get_directory_tree, list_files, git_show, get_file_extensions_summary
 
 logger = logging.getLogger("recruitsight.file_structure")

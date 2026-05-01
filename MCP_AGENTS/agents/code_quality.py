@@ -11,7 +11,7 @@ from pathlib import Path
 
 from agents.base import run_agent
 from config import MODEL_PRO
-from models.schemas import CodeQualityOutput
+from mcp_models.schemas import CodeQualityOutput
 from tools.git_tools import (
     git_show,
     git_search_code,

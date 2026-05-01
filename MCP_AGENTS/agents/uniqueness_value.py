@@ -10,7 +10,7 @@ import logging
 
 from agents.base import run_agent
 from config import MODEL_PRO
-from models.schemas import (
+from mcp_models.schemas import (
     UniquenessOutput,
     SimilarRepoOutput,
     ReadmeRealityOutput,

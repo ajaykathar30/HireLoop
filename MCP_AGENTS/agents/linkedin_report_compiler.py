@@ -13,7 +13,7 @@ from pathlib import Path
 
 from agents.base import run_agent
 from config import MODEL_PRO, REPORTS_DIR
-from models.linkedin_schemas import (
+from mcp_models.linkedin_schemas import (
     LinkedInReportOutput,
     LinkedInProfileOutput,
     LinkedInContentOutput,

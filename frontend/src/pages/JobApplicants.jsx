@@ -2,38 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
-import { Button } from "@/components/ui/button";
 import { 
   ArrowLeft, 
-  Search, 
   Sparkles, 
-  Filter, 
-  User, 
-  Mail, 
-  Calendar,
   ChevronRight,
   TrendingUp,
   Brain,
-  FileText
+  Search
 } from "lucide-react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { applicationApi, jobApi, interviewApi } from "../lib/api";
 import {
   Dialog,
@@ -41,7 +17,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import toast from 'react-hot-toast';
 
 const JobApplicants = () => {
@@ -49,12 +24,11 @@ const JobApplicants = () => {
   const navigate = useNavigate();
   const [applicants, setApplicants] = useState([]);
   const [reports, setReports] = useState([]);
+  const [filterTop20, setFilterTop20] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [triggering, setTriggering] = useState(false);
 
-  const isPipelineTriggered = applicants.some(a => a.fit_score > 0);
   const applicantsWithScore = applicants.filter(a => a.fit_score > 0);
   const averageFit = applicantsWithScore.length > 0 
     ? Math.round(applicantsWithScore.reduce((acc, a) => acc + (a.fit_score || 0), 0) / applicantsWithScore.length) 
@@ -68,14 +42,27 @@ const JobApplicants = () => {
     try {
       setLoading(true);
       const response = await applicationApi.getJobApplications(jobId);
-      setApplicants(response.data);
+      let fetchedApplicants = response.data;
 
       try {
         const reportRes = await interviewApi.getJobReports(jobId);
-        setReports(reportRes.data.reports || []);
+        const fetchedReports = reportRes.data.reports || [];
+        setReports(fetchedReports);
+        
+        fetchedApplicants.sort((a, b) => {
+            const idxA = fetchedReports.findIndex(r => r.application_id === a.id);
+            const idxB = fetchedReports.findIndex(r => r.application_id === b.id);
+            
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return (b.fit_score || 0) - (a.fit_score || 0);
+        });
       } catch (err) {
         console.error("Failed to load reports", err);
       }
+      
+      setApplicants(fetchedApplicants);
     } catch (err) {
       toast.error("Failed to load applicants");
     } finally {
@@ -84,268 +71,235 @@ const JobApplicants = () => {
   };
 
   const handleTriggerPipeline = async () => {
-    setTriggering(true);
     try {
       await jobApi.triggerPipeline(jobId);
-      toast.success("AI Pipeline triggered! Shortlisting in progress...");
-      // Refresh after a delay to see status changes
+      toast.success("AI Pipeline triggered!");
       setTimeout(fetchApplicants, 2000);
     } catch (err) {
       toast.error("Failed to trigger pipeline");
-    } finally {
-      setTriggering(false);
+    }
+  };
+
+  const handleViewReport = (appId) => {
+    const report = reports.find(r => r.application_id === appId);
+    if (report) {
+      setSelectedReport(report);
+      setIsReportOpen(true);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navbar />
-      
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-          <div className="space-y-1">
-            <Button 
-                variant="ghost" 
-                size="sm" 
-                className="pl-0 text-muted-foreground hover:text-primary transition-colors"
-                onClick={() => navigate("/company/jobs")}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b-4 border-black pb-10">
+          <div>
+            <button 
+              onClick={() => navigate('/company/jobs')}
+              className="flex items-center gap-2 text-black/40 font-black uppercase tracking-widest text-xs mb-4 hover:text-black transition-colors"
             >
-                <ArrowLeft size={16} className="mr-2" />
-                Back to Jobs
-            </Button>
-            <h1 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
-              Applicants Dashboard
-              <Badge variant="outline" className="text-xs uppercase font-bold tracking-widest px-2 py-0.5 rounded-md">
+              <ArrowLeft size={14} /> Back to Jobs
+            </button>
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter flex items-center gap-4">
+              Applicants
+              <div className="neo-pill bg-secondary text-black text-xs px-4">
                 {applicants.length} Total
-              </Badge>
+              </div>
             </h1>
           </div>
-          
-          {!isPipelineTriggered && (
-            <Button 
-              className="h-12 px-8 font-black shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 rounded-2xl"
-              disabled={triggering || applicants.length === 0}
-              onClick={handleTriggerPipeline}
+          <div className="flex items-center gap-4">
+            <button 
+                className={`neo-pill text-xs uppercase tracking-widest h-12 px-8 ${filterTop20 ? 'bg-primary text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white text-black'}`}
+                onClick={() => setFilterTop20(!filterTop20)}
             >
-              {triggering ? (
-                  <Sparkles className="mr-2 animate-spin" size={18} />
-              ) : (
-                  <Sparkles className="mr-2 fill-current" size={18} />
-              )}
-              Trigger AI Screening
-            </Button>
-          )}
+                {filterTop20 ? "Showing Top 20" : "Show Top 20"}
+            </button>
+            <button 
+              className="neo-brutal bg-accent text-black h-12 px-8 rounded-full font-black uppercase tracking-widest text-xs flex items-center gap-2"
+              onClick={handleTriggerPipeline}
+              disabled={loading}
+            >
+                <Sparkles size={14} className="fill-current" />
+                Trigger AI Screening
+            </button>
+          </div>
         </div>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <Card className="border-muted-foreground/10 bg-muted/5 shadow-none">
-                <CardContent className="p-6 flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600">
-                        <TrendingUp size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Average Fit</p>
-                        <p className="text-2xl font-black">{averageFit}%</p>
-                    </div>
-                </CardContent>
-            </Card>
-            <Card className="border-muted-foreground/10 bg-muted/5 shadow-none">
-                <CardContent className="p-6 flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                        <Sparkles size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Shortlisted</p>
-                        <p className="text-2xl font-black">
-                            {applicants.filter(a => a.status === 'shortlisted').length}
-                        </p>
-                    </div>
-                </CardContent>
-            </Card>
-            <Card className="border-muted-foreground/10 bg-muted/5 shadow-none">
-                <CardContent className="p-6 flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-600">
-                        <Brain size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AI Screened</p>
-                        <p className="text-2xl font-black">
-                            {applicants.filter(a => a.fit_score > 0).length}
-                        </p>
-                    </div>
-                </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <div className="neo-brutal bg-white p-8 rounded-[2rem] flex items-center gap-6">
+            <div className="h-16 w-16 rounded-2xl bg-primary border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center">
+              <TrendingUp size={24} className="text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-black/40 mb-1">Average Fit</p>
+              <p className="text-3xl font-black">{averageFit}%</p>
+            </div>
+          </div>
+          <div className="neo-brutal bg-white p-8 rounded-[2rem] flex items-center gap-6">
+            <div className="h-16 w-16 rounded-2xl bg-secondary border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center">
+              <Brain size={24} className="text-black" />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-black/40 mb-1">Screened</p>
+              <p className="text-3xl font-black">{applicants.filter(a => a.fit_score > 0).length}</p>
+            </div>
+          </div>
+          <div className="neo-brutal bg-white p-8 rounded-[2rem] flex items-center gap-6">
+            <div className="h-16 w-16 rounded-2xl bg-accent border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center">
+              <Sparkles size={24} className="text-black" />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-black/40 mb-1">Shortlisted</p>
+              <p className="text-3xl font-black">{applicants.filter(a => a.status === 'shortlisted').length}</p>
+            </div>
+          </div>
         </div>
 
         {/* Applicants Table */}
-        <Card className="border-muted-foreground/10 shadow-sm overflow-hidden rounded-[24px]">
-          <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead className="font-black uppercase tracking-widest text-[10px] py-4 pl-8">Candidate</TableHead>
-                <TableHead className="font-black uppercase tracking-widest text-[10px] py-4">AI Fit Score</TableHead>
-                <TableHead className="font-black uppercase tracking-widest text-[10px] py-4">Experience</TableHead>
-                <TableHead className="font-black uppercase tracking-widest text-[10px] py-4">Status</TableHead>
-                <TableHead className="text-right font-black uppercase tracking-widest text-[10px] py-4 pr-8">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-32 text-center">
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                      <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <div className="neo-brutal bg-white rounded-[2rem] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-black text-white uppercase tracking-widest text-xs font-black">
+                  <th className="px-8 py-6">Candidate</th>
+                  <th className="px-6 py-6">AI Fit Score</th>
+                  <th className="px-6 py-6">Status</th>
+                  <th className="px-6 py-6 text-right pr-8">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y-2 divide-black/5">
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className="px-8 py-20 text-center font-bold text-black/40 uppercase tracking-widest">
                       Fetching candidates...
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : applicants.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-64 text-center">
-                    <div className="flex flex-col items-center justify-center gap-4">
-                      <div className="bg-muted p-4 rounded-full">
-                        <User size={32} className="text-muted-foreground" />
-                      </div>
-                      <p className="text-muted-foreground font-bold italic">No candidates have applied for this position yet.</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                applicants.map((app) => {
-                  const appReport = reports.find(r => r.application_id === app.id);
-                  const hasCompletedInterview = appReport && appReport.status === 'completed';
+                    </td>
+                  </tr>
+                ) : applicants.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-8 py-20 text-center font-bold text-black/40 uppercase tracking-widest">
+                      No candidates found.
+                    </td>
+                  </tr>
+                ) : (
+                  applicants
+                    .filter(app => !filterTop20 || (reports.findIndex(r => r.application_id === app.id) !== -1 && reports.findIndex(r => r.application_id === app.id) < 20))
+                    .map((app) => {
+                      const reportIdx = reports.findIndex(r => r.application_id === app.id);
+                      const appReport = reportIdx !== -1 ? reports[reportIdx] : null;
+                      const hasCompletedInterview = appReport && appReport.status === 'completed';
+                      const isTop5 = hasCompletedInterview && reportIdx < 5;
+                      const isTop20 = hasCompletedInterview && reportIdx >= 5 && reportIdx < 20;
 
-                  return (
-                  <TableRow key={app.id} className="group hover:bg-muted/30 transition-colors">
-                    <TableCell className="pl-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <Avatar className="h-10 w-10 border rounded-xl bg-background">
-                          <AvatarFallback className="font-bold text-xs bg-primary/5 text-primary">
-                            {app.candidate_name?.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-bold text-foreground">{app.candidate_name}</div>
-                          <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Applied {new Date(app.applied_at).toLocaleDateString()}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="w-full max-w-[120px] space-y-1.5">
-                        <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter">
-                            <span className="text-primary">{app.fit_score || 0}%</span>
-                        </div>
-                        <Progress value={app.fit_score || 0} className="h-1.5 bg-muted" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-tight border-muted-foreground/20">
-                        {app.candidate_experience || 0} Years
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${
-                        app.status === 'shortlisted' 
-                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' 
-                        : app.status === 'rejected'
-                        ? 'bg-red-500/10 text-red-600 border-red-500/20'
-                        : 'bg-muted text-muted-foreground border-muted-foreground/20'
-                      }`}>
-                        {app.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right pr-8">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className={`h-9 px-3 font-bold text-xs rounded-xl ${hasCompletedInterview ? 'hover:text-primary' : 'opacity-50 cursor-not-allowed'}`}
-                            onClick={() => {
-                                if (hasCompletedInterview) {
-                                    setSelectedReport(appReport);
-                                    setIsReportOpen(true);
-                                } else {
-                                    toast.error("Interview has not been taken yet.");
-                                }
-                            }}
-                        >
-                            <FileText size={14} className="mr-2" />
-                            View Report
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-9 px-4 font-bold text-xs hover:text-primary rounded-xl">
-                            View Resume
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );})
-              )}
-            </TableBody>
-          </Table>
-        </Card>
-        
+                      return (
+                        <tr key={app.id} className={`group hover:bg-black/5 transition-colors ${isTop5 ? 'bg-secondary/10' : isTop20 ? 'bg-primary/5' : ''}`}>
+                          <td className="px-8 py-6">
+                            <div className="flex items-center gap-4">
+                              <div className="h-12 w-12 rounded-xl neo-brutal bg-accent flex items-center justify-center text-lg font-black uppercase">
+                                {app.candidate_name?.substring(0, 1)}
+                              </div>
+                              <div>
+                                <p className="font-black text-lg uppercase tracking-tight flex items-center gap-2">
+                                  {app.candidate_name}
+                                  {isTop5 && <span className="neo-pill bg-secondary text-black text-[9px]">🏆 TOP 5</span>}
+                                  {isTop20 && <span className="neo-pill bg-primary text-white text-[9px]">🚀 TOP 20</span>}
+                                </p>
+                                <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest">
+                                  Applied {new Date(app.applied_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-6">
+                             <div className="flex items-center gap-3">
+                               <div className="w-24 h-3 neo-brutal bg-white rounded-full overflow-hidden">
+                                 <div 
+                                   className={`h-full transition-all duration-1000 ${app.fit_score >= 80 ? 'bg-accent' : app.fit_score >= 50 ? 'bg-secondary' : 'bg-destructive'}`}
+                                   style={{ width: `${app.fit_score || 0}%` }}
+                                 />
+                               </div>
+                               <span className="font-black text-sm">{app.fit_score || 0}%</span>
+                             </div>
+                          </td>
+                          <td className="px-6 py-6">
+                             <div className="neo-pill bg-white border-black/10 text-[10px] text-black/60 uppercase tracking-widest inline-block">
+                               {app.status}
+                             </div>
+                          </td>
+                          <td className="px-6 py-6 text-right pr-8">
+                             <div className="flex items-center justify-end gap-3">
+                               {appReport && (
+                                 <button 
+                                   onClick={() => handleViewReport(app.id)}
+                                   className="neo-pill bg-black text-white text-[10px] uppercase tracking-widest hover:bg-primary transition-all"
+                                 >
+                                   Report
+                                 </button>
+                               )}
+                               <button className="h-10 w-10 neo-brutal bg-white flex items-center justify-center hover:bg-accent transition-all rounded-xl">
+                                 <ChevronRight size={18} />
+                               </button>
+                             </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Report Dialog */}
         <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
-          <DialogContent className="max-w-[50vw] lg:max-w-[800px] max-h-[85vh] p-0 overflow-hidden flex flex-col rounded-[24px]">
-            <DialogHeader className="p-6 bg-muted/50 border-b shrink-0">
-              <DialogTitle className="text-2xl font-black flex items-center gap-2">
-                <Brain className="text-purple-600" />
-                AI Interview Report
+          <DialogContent className="max-w-4xl p-0 overflow-hidden neo-brutal rounded-[2rem] bg-white border-4 border-black">
+            <DialogHeader className="p-8 bg-primary text-white border-b-4 border-black">
+              <DialogTitle className="text-3xl font-black uppercase tracking-tighter flex items-center gap-3">
+                <Brain className="fill-white" />
+                AI Analysis Report
               </DialogTitle>
               {selectedReport && (
-                <div className="text-sm text-muted-foreground mt-2">
-                  Candidate: <span className="font-bold text-foreground">{selectedReport.candidate_name}</span>
-                </div>
+                <p className="text-white/80 font-bold uppercase tracking-widest text-xs mt-2">
+                  Candidate: {selectedReport.candidate_name}
+                </p>
               )}
             </DialogHeader>
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="p-8 max-h-[70vh] overflow-y-auto">
               {selectedReport && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                <div className="space-y-8">
+                  <div className="neo-brutal bg-secondary p-6 rounded-2xl flex items-center justify-between">
                     <div>
-                      <h3 className="font-bold text-purple-900 dark:text-purple-300">Total Score</h3>
-                      <p className="text-sm text-purple-700 dark:text-purple-400">Aggregated AI evaluation</p>
+                      <h3 className="font-black uppercase tracking-widest text-xs mb-1">Overall Fitness Score</h3>
+                      <p className="text-sm font-bold opacity-70">Based on multi-source data analysis</p>
                     </div>
-                    <div className="text-3xl font-black text-purple-600">
-                      {selectedReport.total_score || 0}<span className="text-lg text-muted-foreground">/100</span>
-                    </div>
+                    <div className="text-5xl font-black">{selectedReport.total_score || 0}%</div>
                   </div>
-                  
-                  {selectedReport.report_summary && (
-                    <div className="space-y-2">
-                      <h3 className="font-black text-lg tracking-tight">Executive Summary</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap p-4 bg-muted/50 rounded-xl">
-                        {selectedReport.report_summary}
-                      </p>
-                    </div>
-                  )}
 
                   <div className="space-y-4">
-                    <h3 className="font-black text-lg tracking-tight">Detailed Responses</h3>
-                    {selectedReport.questions.map((q, i) => (
-                      <Card key={i} className="border-muted-foreground/10 shadow-none">
-                        <CardHeader className="p-4 pb-2">
-                          <CardTitle className="text-sm font-bold flex justify-between gap-4">
-                            <span>{i + 1}. {q.question}</span>
-                            <Badge variant="outline" className="shrink-0">{q.score || 0}/20</Badge>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0 space-y-3 text-sm">
-                          <div>
-                            <span className="font-bold text-xs uppercase tracking-widest text-muted-foreground block mb-1">Answer</span>
-                            <p className="text-foreground bg-muted/30 p-3 rounded-lg">{q.answer || "No answer provided"}</p>
+                    <h3 className="font-black text-xl uppercase tracking-tight">Executive Summary</h3>
+                    <div className="neo-brutal bg-white p-6 rounded-2xl font-bold leading-relaxed text-black/70">
+                      {selectedReport.report_summary}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="font-black text-xl uppercase tracking-tight">Technical Breakdown</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      {selectedReport.questions?.map((q, i) => (
+                        <div key={i} className="neo-brutal bg-white p-6 rounded-2xl">
+                          <div className="flex justify-between items-start gap-4 mb-4">
+                            <h4 className="font-black text-sm uppercase leading-tight">{q.question}</h4>
+                            <div className="neo-pill bg-accent text-black text-[10px] px-3">{q.score}/20</div>
                           </div>
-                          {q.feedback && (
-                            <div>
-                              <span className="font-bold text-xs uppercase tracking-widest text-emerald-600 block mb-1">AI Feedback</span>
-                              <p className="text-muted-foreground p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">{q.feedback}</p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
+                          <p className="text-sm font-bold text-black/60 italic mb-4">"{q.answer}"</p>
+                          <div className="bg-black/5 p-4 rounded-xl text-xs font-bold leading-relaxed">
+                            <span className="text-primary uppercase tracking-widest mb-1 block">AI Feedback:</span>
+                            {q.feedback}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -353,7 +307,6 @@ const JobApplicants = () => {
           </DialogContent>
         </Dialog>
       </main>
-
       <Footer />
     </div>
   );

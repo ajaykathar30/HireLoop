@@ -17,7 +17,7 @@ import asyncio
 import logging
 import time
 
-from models.linkedin_schemas import (
+from mcp_models.linkedin_schemas import (
     LinkedInPipelineResult,
     LinkedInAgentResult,
 )

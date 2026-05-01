@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from sqlmodel import Field, SQLModel, Column, Relationship
 from sqlalchemy import TIMESTAMP, TEXT, INTEGER, BOOLEAN
+from pgvector.sqlalchemy import Vector
 
 
 def utcnow():
@@ -70,3 +71,22 @@ class InterviewQuestion(SQLModel, table=True):
 
     # Relationships
     session: "InterviewSession" = Relationship(back_populates="questions")
+
+
+class InterviewRoomMemory(SQLModel, table=True):
+    __tablename__ = "interview_room_memory"
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        nullable=False
+    )
+    session_id: uuid.UUID = Field(foreign_key="interview_sessions.id", index=True)
+    
+    interaction_text: str = Field(sa_column=Column(TEXT, nullable=False))
+    
+    # 768-dimensional embedding from gemini-embedding-001 (truncated)
+    embedding: list[float] = Field(sa_column=Column(Vector(768)))
+    
+    created_at: datetime = Field(default_factory=utcnow)
+

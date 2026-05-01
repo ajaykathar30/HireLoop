@@ -10,7 +10,7 @@ import logging
 
 from agents.base import run_agent
 from config import MODEL_PRO
-from models.schemas import PlagiarismOutput, SimilarRepoOutput, FileStructureOutput
+from mcp_models.schemas import PlagiarismOutput, SimilarRepoOutput, FileStructureOutput
 from tools.git_tools import git_show, git_search_code, git_log, list_files, get_directory_tree
 
 logger = logging.getLogger("recruitsight.plagiarism")

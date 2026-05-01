@@ -9,7 +9,7 @@ import re
 from datetime import datetime, timezone
 
 from config import CLONE_BASE_DIR
-from models.schemas import RepoIngestionOutput, IngestionStatus
+from mcp_models.schemas import RepoIngestionOutput, IngestionStatus
 from tools.git_tools import git_clone, git_log, git_branch
 
 logger = logging.getLogger("recruitsight.repo_ingestion")

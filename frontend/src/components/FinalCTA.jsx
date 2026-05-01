@@ -4,40 +4,39 @@ import { Link } from "react-router-dom";
 
 export const FinalCTA = () => {
   return (
-    <section className="py-24 md:py-32 bg-slate-900 overflow-hidden relative border-b">
-      {/* Background gradients */}
-      <div className="absolute top-0 left-0 w-full h-full -z-0">
-        <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2" />
-      </div>
+    <section className="py-24 md:py-40 bg-white px-4 relative">
+      <div className="max-w-5xl mx-auto neo-brutal bg-primary p-12 md:p-20 rounded-[3rem] text-center relative overflow-hidden">
+        {/* Decorative Circles */}
+        <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-secondary rounded-full border-4 border-black -rotate-12"></div>
+        <div className="absolute bottom-[-50px] left-[-50px] w-60 h-60 bg-accent rounded-full border-4 border-black rotate-12"></div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm">
-           <Sparkles className="text-primary fill-primary" size={14} />
-           <span className="text-[10px] font-bold uppercase tracking-widest text-white/80">Join 500+ teams</span>
+        <div className="relative z-10">
+          <div className="neo-pill bg-white text-black text-xs uppercase tracking-widest mb-10 inline-block">
+             Join 500+ teams
+          </div>
+          
+          <h2 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter mb-10 leading-[0.9]">
+            Ready to build your <br /> <span className="text-secondary">dream team?</span>
+          </h2>
+          
+          <p className="text-xl md:text-2xl font-bold text-white/80 mb-12 max-w-2xl mx-auto leading-tight">
+            Automate your hiring, eliminate bias, and find the talent you've been searching for. It's time to level up.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <button className="neo-brutal bg-white text-black px-12 h-20 rounded-[2rem] font-black uppercase tracking-widest text-lg flex items-center gap-3 group">
+              Get Started Now
+              <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+            </button>
+            <button className="neo-brutal bg-black text-white px-12 h-20 rounded-[2rem] font-black uppercase tracking-widest text-lg">
+              Schedule a Demo
+            </button>
+          </div>
+          
+          <p className="mt-10 text-sm font-black uppercase tracking-widest text-white/40">
+            No credit card required • 14-day free trial
+          </p>
         </div>
-        
-        <h2 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mb-8 leading-[1.1] tracking-tight">
-          Ready to build your <br /> <span className="text-primary">dream team?</span>
-        </h2>
-        
-        <p className="text-lg md:text-xl font-medium text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-          Automate your hiring, eliminate bias, and find the talent you've been searching for. It's time to level up your recruitment process.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" className="h-14 px-10 text-lg font-bold shadow-xl shadow-primary/20 group">
-            Get Started Now
-            <ArrowRight size={20} className="ml-2 transition-transform group-hover:translate-x-1" />
-          </Button>
-          <Button variant="outline" size="lg" className="h-14 px-10 text-lg font-bold text-white border-white/20 hover:bg-white/5 bg-transparent">
-            Schedule a Demo
-          </Button>
-        </div>
-        
-        <p className="mt-8 text-sm font-medium text-slate-500">
-          No credit card required • 14-day free trial • Cancel anytime
-        </p>
       </div>
     </section>
   );

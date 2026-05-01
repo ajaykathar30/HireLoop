@@ -10,7 +10,7 @@ import logging
 
 from agents.base import run_agent
 from config import MODEL_FLASH
-from models.schemas import ReadmeRealityOutput
+from mcp_models.schemas import ReadmeRealityOutput
 from tools.git_tools import git_show, git_search_code, list_files
 
 logger = logging.getLogger("recruitsight.readme_reality")
