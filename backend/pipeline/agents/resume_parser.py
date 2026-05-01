@@ -2,6 +2,7 @@
 from dotenv import load_dotenv
 import os
 from typing import Optional, List
+from core.config import settings
 from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,7 +27,7 @@ async def parse_resume_text(text: str) -> ParsedResume:
     """
     api_key = os.getenv("GOOGLE_API_KEY")
     llm = ChatGoogleGenerativeAI(
-        model="gemini-3-flash-preview", # Use a stable model name or your preferred version
+        model=settings.GEMINI_MODEL, # Use a stable model name or your preferred version
         google_api_key=api_key,
         temperature=0.3
     )

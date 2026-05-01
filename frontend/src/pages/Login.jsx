@@ -33,7 +33,7 @@ const Login = () => {
       if (role === 'candidate') {
         navigate('/candidate-home');
       } else {
-        navigate('/');
+        navigate('/company/jobs');
       }
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Login failed. Please check your credentials.');

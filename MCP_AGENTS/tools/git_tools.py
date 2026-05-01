@@ -46,8 +46,11 @@ def git_clone(repo_url: str, target_dir: str, timeout: int = 120) -> bool:
     try:
         # Remove target if it already exists
         if os.path.exists(target_dir):
-            import shutil
-            shutil.rmtree(target_dir, ignore_errors=True)
+            import shutil, stat
+            def on_rm_error(func, path, exc_info):
+                os.chmod(path, stat.S_IWRITE)
+                func(path)
+            shutil.rmtree(target_dir, onerror=on_rm_error)
 
         result = subprocess.run(
             ["git", "clone", repo_url, target_dir],

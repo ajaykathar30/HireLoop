@@ -7,7 +7,10 @@ from pgvector.sqlalchemy import Vector
 from pydantic import  field_serializer
 import numpy as np
 
-def utcnow():
+def utcnow_aware():
+    return datetime.now(timezone.utc)
+
+def utcnow_naive():
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 class Job(SQLModel, table=True):
@@ -36,7 +39,7 @@ class Job(SQLModel, table=True):
 
     job_posted_at: datetime = Field(
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()),
-        default_factory=utcnow
+        default_factory=utcnow_aware
     )
     application_deadline: Optional[datetime] = Field(
         sa_column=Column(TIMESTAMP(timezone=True), nullable=True),
@@ -54,4 +57,4 @@ class Job(SQLModel, table=True):
             return v.tolist()
         return v
 
-    created_at: datetime = Field(default_factory=utcnow)
+    created_at: datetime = Field(default_factory=utcnow_naive)

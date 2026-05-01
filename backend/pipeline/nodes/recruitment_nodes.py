@@ -28,6 +28,15 @@ async def fetch_applications_node(state: PipelineState, config: RunnableConfig):
     print("\n--- NODE: fetch_applications_node ---")
     db = config["configurable"].get("db")
     job_id = state["job_id"]
+    
+    # Atomically check and set pipeline_triggered to prevent race conditions
+    job = await db.get(Job, job_id)
+    if job.pipeline_triggered:
+        return {"application_ids": [], "logs": ["Pipeline already triggered for this job. Skipping."]}
+    job.pipeline_triggered = True
+    db.add(job)
+    await db.commit()
+    
     stmt = select(Application).where(and_(Application.job_id == job_id, Application.status == "applied"))
     result = await db.execute(stmt)
     apps = result.scalars().all()
@@ -112,7 +121,6 @@ async def finalize_recruitment_node(state: PipelineState, config: RunnableConfig
             app.status = "rejected"
         db.add(app)
     job.status = "closed"
-    job.pipeline_triggered = True
     db.add(job)
     await db.commit()
     return {"logs": ["Recruitment finalized"]}

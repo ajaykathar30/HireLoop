@@ -22,14 +22,16 @@ if not GEMINI_API_KEY:
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # ─── Model Routing ─────────────────────────────────────────────────
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
 # Deep reasoning: complex analysis, cross-referencing, report synthesis
-MODEL_PRO = "gemini-2.5-pro"
+MODEL_PRO = GEMINI_MODEL
 
 # Fast & capable: parsing, structured extraction, pattern matching
-MODEL_FLASH = "gemini-2.5-flash"
+MODEL_FLASH = GEMINI_MODEL
 
 # Ultra-fast: simple validation, URL parsing
-MODEL_FLASH_LITE = "gemini-2.5-flash-lite"
+MODEL_FLASH_LITE = GEMINI_MODEL
 
 # ─── Paths ─────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).parent

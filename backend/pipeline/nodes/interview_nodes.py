@@ -30,6 +30,7 @@ class InterviewState(TypedDict):
     last_answer_text: Optional[str]
     is_timeout: bool
     used_rag_chunks: list[str]
+    next_question_text: Optional[str]
     logs: Annotated[List[str], operator.add]
 
 async def init_interview_node(state: InterviewState, config: RunnableConfig):
@@ -48,7 +49,8 @@ async def init_interview_node(state: InterviewState, config: RunnableConfig):
             "questions": [q.question_text for q in existing_qs],
             "status": "asking",
             "current_q_idx": 0,
-            "used_rag_chunks": []
+            "used_rag_chunks": [],
+            "next_question_text": existing_qs[0].question_text if existing_qs else None
         }
 
     # Generate the FIRST question only
@@ -72,7 +74,7 @@ async def init_interview_node(state: InterviewState, config: RunnableConfig):
     session.current_question_number = 1
     await db.commit()
     
-    return {"questions": [first_q.text], "status": "asking", "current_q_idx": 0, "used_rag_chunks": []}
+    return {"questions": [first_q.text], "status": "asking", "current_q_idx": 0, "used_rag_chunks": [], "next_question_text": first_q.text}
 
 async def ask_question_node(state: InterviewState, config: RunnableConfig):
     """Purely fetches the question and generates audio."""
@@ -193,7 +195,8 @@ async def save_answer_node(state: InterviewState, config: RunnableConfig):
         return {
             "current_q_idx": new_idx,
             "status": "asking" if new_idx < 5 else "finalizing",
-            "used_rag_chunks": state.get("used_rag_chunks", [])
+            "used_rag_chunks": used_rag,
+            "next_question_text": next_q.text if new_idx < 5 else None
         }
     return state
 
@@ -225,7 +228,7 @@ async def finalize_interview_node(state: InterviewState, config: RunnableConfig)
     session.total_score = batch_report.total_score
     session.report_summary = batch_report.summary
     session.status = "completed"
-    session.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    session.completed_at = datetime.now(timezone.utc)
     
     app.status = "interviewed"
     app.fit_score = int(batch_report.total_score)

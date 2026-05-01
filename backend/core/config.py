@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     HF_API_KEY: str
     SARVAM_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

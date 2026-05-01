@@ -67,12 +67,12 @@ async def get_mcp_scores(resume_url: str) -> Dict[str, float]:
         # 4. Collect scores
         if github_task and not isinstance(github_task.result(), Exception):
             github_res = github_task.result()
-            if github_res and hasattr(github_res, "composite_score"):
+            if github_res and getattr(github_res, "composite_score", None) is not None:
                 results["github_score"] = float(github_res.composite_score)
                 
         if linkedin_task and not isinstance(linkedin_task.result(), Exception):
             linkedin_res = linkedin_task.result()
-            if linkedin_res and hasattr(linkedin_res, "composite_score"):
+            if linkedin_res and getattr(linkedin_res, "composite_score", None) is not None:
                 results["linkedin_score"] = float(linkedin_res.composite_score)
                 
     except Exception as e:
@@ -81,7 +81,7 @@ async def get_mcp_scores(resume_url: str) -> Dict[str, float]:
         if temp_pdf_path and os.path.exists(temp_pdf_path):
             try:
                 os.remove(temp_pdf_path)
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to remove temp PDF {temp_pdf_path}: {e}")
                 
     return results

@@ -3,6 +3,7 @@ import os
 from typing import List
 from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
+from core.config import settings
 
 class FitScore(BaseModel):
     score: int = Field(description="Match score from 0 to 100")
@@ -16,7 +17,7 @@ async def score_fit(resume_text: str, job_description: str, job_requirements: st
     """
     api_key = os.getenv("GOOGLE_API_KEY")
     llm = ChatGoogleGenerativeAI(
-        model="gemini-3-flash-preview",
+        model=settings.GEMINI_MODEL,
         google_api_key=api_key,
         temperature=0
     )

@@ -21,7 +21,7 @@ async def rank_candidates_by_similarity(job_id: uuid.UUID, db: AsyncSession) -> 
           AND c.resume_embedding IS NOT NULL
           AND j.job_embedding IS NOT NULL
         ORDER BY c.resume_embedding <=> j.job_embedding
-        LIMIT 2
+        LIMIT 20
     """)
     
     result = await db.execute(query, {"job_id": job_id})

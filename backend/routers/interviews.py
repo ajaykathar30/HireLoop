@@ -82,20 +82,13 @@ async def start_interview_session(
             config=config
         )
         
-        # Fetch the question we just generated
-        q_stmt = select(InterviewQuestion).where(
-            and_(InterviewQuestion.session_id == session_id, InterviewQuestion.order_index == 0)
-        ).limit(1)
-        q_res = await db.execute(q_stmt)
-        db_q = q_res.scalar_one_or_none()
-        
-        if not db_q:
-            raise HTTPException(status_code=500, detail="Failed to initialize interview")
+        snapshot = await interview_app.aget_state(config)
+        next_q_text = snapshot.values.get("next_question_text")
         
         return {
             "question_number": 1,
             "total_questions": 5,
-            "text": db_q.question_text,
+            "text": next_q_text,
             "status": "ongoing"
         }
     except Exception as e:
@@ -124,7 +117,8 @@ async def submit_interview_answer(
                 "last_answer_audio": audio_bytes,
                 "is_timeout": is_timeout or force_finalize,
                 "status": "saving"
-            }
+            },
+            as_node="ask"
         )
         await interview_app.ainvoke(None, config=config)
 
@@ -133,20 +127,14 @@ async def submit_interview_answer(
         if snapshot.values.get("status") == "completed":
             return {"status": "completed", "message": "Interview finished"}
 
-        # 3. Get next question
-        # After save_answer, the current_q_idx in state points to the NEXT question
+        # 3. Get next question from state
         next_idx = snapshot.values.get("current_q_idx")
-        
-        q_stmt = select(InterviewQuestion).where(
-            and_(InterviewQuestion.session_id == session_id, InterviewQuestion.order_index == next_idx)
-        ).limit(1)
-        q_res = await db.execute(q_stmt)
-        db_q = q_res.scalar_one_or_none()
+        next_q_text = snapshot.values.get("next_question_text")
 
         return {
             "status": "ongoing",
             "question_number": next_idx + 1,
-            "text": db_q.question_text if db_q else "Loading..."
+            "text": next_q_text or "Loading..."
         }
     except Exception as e:
         logger.error(f"Error submitting answer: {e}")
@@ -165,7 +153,10 @@ async def get_session_by_application(
 
     stmt = select(InterviewSession).where(InterviewSession.application_id == application_id)
     res = await db.execute(stmt)
-    return res.scalar_one_or_none()
+    session = res.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Interview session not found for this application")
+    return session
 
 @router.get("/{session_id}")
 async def get_interview_session_details(

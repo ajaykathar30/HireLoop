@@ -54,7 +54,8 @@ const InterviewSession = () => {
     }
     setStatus('speaking');
     const idx = questionNumber - 1;
-    audioPlayerRef.current.src = `http://127.0.0.1:8000/interviews/${sessionId}/stream-audio/${idx}?t=${Date.now()}`;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+    audioPlayerRef.current.src = `${baseUrl}/interviews/${sessionId}/stream-audio/${idx}?t=${Date.now()}`;
     audioPlayerRef.current.play().catch(err => {
         console.error("Audio playback blocked:", err);
         setStatus('listening');
@@ -94,7 +95,7 @@ const InterviewSession = () => {
       audioChunksRef.current = [];
       mediaRecorderRef.current.ondataavailable = (event) => audioChunksRef.current.push(event.data);
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setRecordedBlob(audioBlob);
         if (isTimeoutRef.current) {
             submitAnswer(null, true);
