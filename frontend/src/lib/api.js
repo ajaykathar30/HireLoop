@@ -62,7 +62,7 @@ export const interviewApi = {
   submitAnswer: (sessionId, audioBlob, isTimeout, forceFinalize = false) => {
     const formData = new FormData();
     if (audioBlob) {
-      formData.append('audio_file', audioBlob, 'answer.wav');
+      formData.append('audio_file', audioBlob, 'answer.webm');
     }
     formData.append('is_timeout', isTimeout);
     formData.append('force_finalize', forceFinalize);
@@ -73,7 +73,7 @@ export const interviewApi = {
   },
   getDetails: (sessionId) => api.get(`/interviews/${sessionId}`),
   getSessionByAppId: (appId) => api.get(`/interviews/session/${appId}`),
-  getJobReports: (jobId) => api.get(`/interviews/job/${jobId}/reports`),
+  getJobReports: (jobId, limit = null) => api.get(`/interviews/job/${jobId}/reports${limit ? '?limit='+limit : ''}`),
 };
 
 export default api;

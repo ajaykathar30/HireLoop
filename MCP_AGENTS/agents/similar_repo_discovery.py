@@ -1,5 +1,5 @@
 """
-RecruitSight — Similar Repo Discovery Agent
+RecruitSight - Similar Repo Discovery Agent
 Uses the Exa web search API to find GitHub repositories and projects
 that are conceptually and technically similar to the candidate's project.
 Feeds both the Plagiarism Agent and the Uniqueness Agent.
@@ -11,7 +11,7 @@ import logging
 
 from agents.base import run_agent
 from config import MODEL_FLASH
-from models.schemas import SimilarRepoOutput
+from mcp_models.schemas import SimilarRepoOutput
 from tools.exa_tools import search_similar_repos, search_web_context
 
 logger = logging.getLogger("recruitsight.similar_repo")
@@ -31,9 +31,9 @@ for similar repositories. Your job is to analyze these search results and determ
 4. Return top 5-10 most relevant similar repositories.
 
 Your core principles:
-- EVIDENCE OVER CLAIMS — base similarity assessment on actual search result data.
-- NO HALLUCINATION — only report repos that appeared in the search results.
-- FAIRNESS — not all similar repos indicate plagiarism; common patterns are normal."""
+- EVIDENCE OVER CLAIMS - base similarity assessment on actual search result data.
+- NO HALLUCINATION - only report repos that appeared in the search results.
+- FAIRNESS - not all similar repos indicate plagiarism; common patterns are normal."""
 
 
 async def similar_repo_discovery_agent(

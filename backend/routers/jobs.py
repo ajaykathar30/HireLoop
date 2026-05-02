@@ -37,11 +37,10 @@ async def trigger_job_pipeline(
     job_id: uuid.UUID,
     background_tasks: BackgroundTasks,
     job: Job = Depends(verify_job_ownership),
-    db: AsyncSession = Depends(get_db)
 ):
     """
     Manually triggers the recruitment pipeline for a specific job.
     Only accessible by the company that posted the job.
     """
-    background_tasks.add_task(run_job_pipeline, job.id, db)
+    background_tasks.add_task(run_job_pipeline, job.id)
     return {"message": "Pipeline triggered successfully", "job_id": job.id}

@@ -1,5 +1,5 @@
 """
-RecruitSight — README vs Reality Agent
+RecruitSight - README vs Reality Agent
 Compares what the README claims the project does against what the code
 actually implements. Detects over-claiming and under-delivery.
 Uses gemini-2.5-flash for cross-referencing.
@@ -10,7 +10,7 @@ import logging
 
 from agents.base import run_agent
 from config import MODEL_FLASH
-from models.schemas import ReadmeRealityOutput
+from mcp_models.schemas import ReadmeRealityOutput
 from tools.git_tools import git_show, git_search_code, list_files
 
 logger = logging.getLogger("recruitsight.readme_reality")
@@ -30,16 +30,16 @@ Your responsibilities:
    - Is the claimed tech stack actually used?
    - Are setup instructions accurate and complete?
 4. Classify each claim as:
-   - VERIFIED — code confirms the claim
-   - PARTIAL — code has basic implementation but not the full claim
-   - UNVERIFIABLE — claim cannot be confirmed from code alone
-   - FALSE — code clearly contradicts the claim
+   - VERIFIED - code confirms the claim
+   - PARTIAL - code has basic implementation but not the full claim
+   - UNVERIFIABLE - claim cannot be confirmed from code alone
+   - FALSE - code clearly contradicts the claim
 5. Calculate a README Honesty Score from 1-10.
 
 Your core principles:
-- EVIDENCE OVER CLAIMS — cite specific file paths and code patterns as evidence.
-- NO HALLUCINATION — if you cannot find evidence for or against a claim, mark it UNVERIFIABLE.
-- FAIRNESS — recognize both accurate and inaccurate claims."""
+- EVIDENCE OVER CLAIMS - cite specific file paths and code patterns as evidence.
+- NO HALLUCINATION - if you cannot find evidence for or against a claim, mark it UNVERIFIABLE.
+- FAIRNESS - recognize both accurate and inaccurate claims."""
 
 
 async def readme_reality_agent(local_path: str) -> ReadmeRealityOutput | None:

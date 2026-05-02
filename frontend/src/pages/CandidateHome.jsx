@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
-import { Button } from "../components/ui/button";
 import { 
   Search, 
   MapPin, 
@@ -14,17 +13,8 @@ import {
   Bookmark,
   ChevronRight,
   Filter,
-  ArrowRight,
   FileText
 } from "lucide-react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
 import { 
   Dialog, 
   DialogContent, 
@@ -33,14 +23,6 @@ import {
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { jobApi, applicationApi, interviewApi } from "../lib/api";
 import toast from 'react-hot-toast';
 
@@ -48,7 +30,6 @@ const formatRelativeTime = (date) => {
   if (!date) return "Recently";
   const now = new Date();
   const diffInSeconds = Math.floor((now - new Date(date)) / 1000);
-  
   if (diffInSeconds < 60) return "just now";
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
@@ -60,8 +41,8 @@ const CandidateHome = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ applications: 0, interviews: 0 });
-  
-  // Application Modal State
+  const [sessions, setSessions] = useState([]);
+  const [activeTab, setActiveTab] = useState("recommended");
   const [selectedJob, setSelectedJob] = useState(null);
   const [coverNote, setCoverNote] = useState("");
   const [applying, setApplying] = useState(false);
@@ -69,7 +50,17 @@ const CandidateHome = () => {
   useEffect(() => {
     fetchJobs();
     fetchStats();
+    fetchSessions();
   }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const res = await interviewApi.getMySessions();
+      setSessions(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch sessions:", err);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -101,16 +92,16 @@ const CandidateHome = () => {
 
   const handleApply = async () => {
     if (!selectedJob) return;
-    
     setApplying(true);
     try {
       await applicationApi.apply({
         job_id: selectedJob.id,
         cover_note: coverNote
       });
-      toast.success(`Successfully applied for ${selectedJob.title}!`);
+      toast.success(`Successfully applied!`);
       setSelectedJob(null);
       setCoverNote("");
+      fetchStats();
     } catch (err) {
       toast.error(err.response?.data?.detail || "Application failed");
     } finally {
@@ -119,262 +110,268 @@ const CandidateHome = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background font-sans selection:bg-primary/10 selection:text-primary">
+    <div className="min-h-screen bg-white">
       <Navbar />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Welcome Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
-          <div className="space-y-2">
-            <Badge variant="secondary" className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/5 text-primary border-primary/10 mb-2">
-              <Sparkles size={12} className="mr-1.5 fill-primary" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-12 mb-16 border-b-4 border-black pb-12">
+          <div className="space-y-6">
+            <div className="neo-pill bg-primary text-white text-[10px] uppercase tracking-widest inline-flex items-center gap-2">
+              <Sparkles size={12} className="fill-white" />
               AI Matching is active
-            </Badge>
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground">
-              Your next career move <br />
-              starts <span className="text-primary">right here.</span>
+            </div>
+            <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.9]">
+              Your next <span className="text-primary underline decoration-8 underline-offset-8">big move</span> <br />
+              starts here.
             </h1>
-            <p className="text-muted-foreground text-lg max-w-xl">
-              We've analyzed your profile and found {jobs.length} new roles that match your skills and experience.
+            <p className="text-black font-bold text-xl max-w-xl opacity-70">
+              Analyzed your profile and found <span className="bg-secondary px-2">{jobs.length} roles</span> that match your unique skills.
             </p>
           </div>
           
-          <div className="flex gap-4">
-            <Card className="shadow-sm border-muted-foreground/10 bg-muted/5">
-              <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                <span className="text-2xl font-bold text-primary">{stats.applications}</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Applications</span>
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm border-muted-foreground/10 bg-muted/5">
-              <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                <span className="text-2xl font-bold text-primary">{stats.interviews}</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Interviews</span>
-              </CardContent>
-            </Card>
+          <div className="flex gap-6">
+            <div className="neo-brutal bg-white p-6 rounded-2xl text-center min-w-[120px]">
+              <p className="text-4xl font-black">{stats.applications}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-black/40">Applied</p>
+            </div>
+            <div className="neo-brutal bg-accent p-6 rounded-2xl text-center min-w-[120px]">
+              <p className="text-4xl font-black">{stats.interviews}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-black/40">Interviews</p>
+            </div>
           </div>
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-16 p-4 bg-muted/30 rounded-2xl border">
-          <div className="md:col-span-5 relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
-            <Input 
-              placeholder="Job title, keywords, or company" 
-              className="pl-10 h-12 bg-background border-muted-foreground/20 focus-visible:ring-primary/20"
+        <div className="neo-brutal bg-white p-6 rounded-3xl grid grid-cols-1 md:grid-cols-12 gap-4 mb-20">
+          <div className="md:col-span-5 relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40" size={20} />
+            <input 
+              placeholder="Search roles, skills..." 
+              className="w-full h-14 pl-12 pr-4 bg-black/5 rounded-2xl border-2 border-transparent focus:border-black focus:bg-white outline-none font-bold transition-all"
             />
           </div>
-          <div className="md:col-span-4 relative group">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
-            <Input 
-              placeholder="City, state, or remote" 
-              className="pl-10 h-12 bg-background border-muted-foreground/20 focus-visible:ring-primary/20"
+          <div className="md:col-span-4 relative">
+            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40" size={20} />
+            <input 
+              placeholder="City or Remote" 
+              className="w-full h-14 pl-12 pr-4 bg-black/5 rounded-2xl border-2 border-transparent focus:border-black focus:bg-white outline-none font-bold transition-all"
             />
           </div>
-          <div className="md:col-span-3 flex gap-2">
-            <Button variant="outline" size="lg" className="h-12 border-muted-foreground/20">
-              <Filter size={18} className="mr-2" />
-              Filters
-            </Button>
-            <Button size="lg" className="flex-1 h-12 shadow-sm font-bold">
-              Find Jobs
-            </Button>
+          <div className="md:col-span-3 flex gap-3">
+            <button className="h-14 px-6 neo-brutal bg-white flex items-center justify-center rounded-2xl">
+              <Filter size={20} />
+            </button>
+            <button className="flex-1 h-14 neo-brutal bg-black text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-primary transition-all">
+              Search
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           {/* Main Feed */}
-          <div className="lg:col-span-8">
-            <Tabs defaultValue="recommended" className="w-full">
-              <div className="flex items-center justify-between border-b mb-6">
-                <TabsList className="bg-transparent h-auto p-0 gap-8 rounded-none">
-                  <TabsTrigger 
-                    value="recommended" 
-                    className="px-0 py-3 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground rounded-none text-base font-semibold shadow-none transition-all"
-                  >
-                    Recommended
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="recent" 
-                    className="px-0 py-3 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground rounded-none text-base font-semibold shadow-none transition-all"
-                  >
-                    Newest
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="saved" 
-                    className="px-0 py-3 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground rounded-none text-base font-semibold shadow-none transition-all"
-                  >
-                    Saved
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
-              <TabsContent value="recommended" className="mt-0 space-y-4 outline-none">
-                {loading ? (
-                    [1,2,3].map(i => (
-                        <div key={i} className="h-40 w-full bg-muted animate-pulse rounded-2xl" />
-                    ))
-                ) : jobs.length > 0 ? (
-                    jobs.map((job) => (
-                    <Card key={job.id} className="group hover:border-primary/30 transition-all duration-200 shadow-sm hover:shadow-md">
-                        <CardHeader className="p-6 pb-4">
-                        <div className="flex justify-between items-start">
-                            <div className="flex gap-4">
-                            <Avatar className="h-12 w-12 rounded-lg border bg-muted/20">
-                                <AvatarImage src={job.company_logo} />
-                                <AvatarFallback className="font-bold text-primary bg-primary/5">
-                                    {job.company_name?.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="space-y-1">
-                                <CardTitle className="text-xl group-hover:text-primary transition-colors leading-none">{job.title}</CardTitle>
-                                <div className="flex items-center gap-3 text-sm text-muted-foreground font-medium">
-                                <span className="flex items-center gap-1.5"><Building2 size={14} /> {job.company_name}</span>
-                                <span>•</span>
-                                <span className="flex items-center gap-1.5"><MapPin size={14} /> {job.location || "Remote"}</span>
-                                </div>
-                            </div>
-                            </div>
-                            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-2 py-0.5 font-bold">
-                                AI Match
-                            </Badge>
-                        </div>
-                        </CardHeader>
-                        <CardContent className="px-6 pb-6">
-                        <div className="flex flex-wrap gap-2 mb-4">
-                            {job.job_type && (
-                                <Badge variant="secondary" className="font-medium text-[10px] px-2 py-0.5 rounded-md uppercase">
-                                    {job.job_type}
-                                </Badge>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground">
-                            <span className="flex items-center gap-1.5"><DollarSign size={14} /> {job.salary_min && job.salary_max ? `$${job.salary_min/1000}k - $${job.salary_max/1000}k` : "Salary Undisclosed"}</span>
-                            <span className="flex items-center gap-1.5"><Clock size={14} /> {formatRelativeTime(job.created_at)}</span>
-                        </div>
-                        </CardContent>
-                        <Separator className="opacity-50" />
-                        <CardFooter className="px-6 py-3 flex justify-between items-center bg-muted/5 group-hover:bg-muted/10 transition-colors">
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-primary">
-                            <Bookmark size={18} className="mr-2" />
-                            Save
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          className="h-9 px-6 font-bold"
-                          onClick={() => setSelectedJob(job)}
-                        >
-                            Apply Now
-                        </Button>
-                        </CardFooter>
-                    </Card>
-                    ))
-                ) : (
-                    <div className="py-20 text-center border-2 border-dashed rounded-3xl bg-muted/5">
-                        <p className="text-muted-foreground font-bold italic">No jobs found matching your profile yet.</p>
-                        <Button variant="link" onClick={fetchJobs} className="mt-2 text-primary">Refresh Feed</Button>
-                    </div>
+          <div className="lg:col-span-8 space-y-10">
+            <div className="flex items-center gap-8 border-b-2 border-black/10">
+              <button 
+                onClick={() => setActiveTab("recommended")}
+                className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'recommended' ? 'border-b-4 border-black text-black' : 'text-black/20 hover:text-black'}`}
+              >
+                Recommended
+              </button>
+              <button 
+                onClick={() => setActiveTab("interviews")}
+                className={`pb-4 text-sm font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'interviews' ? 'border-b-4 border-black text-black' : 'text-black/20 hover:text-black'}`}
+              >
+                My Interviews
+                {sessions.length > 0 && (
+                  <span className="neo-pill bg-accent text-black text-[9px] px-2 py-0.5">{sessions.length}</span>
                 )}
-              </TabsContent>
-            </Tabs>
+              </button>
+            </div>
+
+            <div className="space-y-8">
+              {loading ? (
+                [1,2,3].map(i => (
+                  <div key={i} className="h-48 neo-brutal bg-black/5 animate-pulse rounded-3xl" />
+                ))
+              ) : activeTab === "recommended" ? (
+                jobs.map((job) => (
+                  <div key={job.id} className="neo-brutal bg-white rounded-3xl overflow-hidden group hover:-translate-y-2 transition-all duration-300">
+                    <div className="p-8">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="flex gap-6">
+                          <div className="h-16 w-16 rounded-2xl neo-brutal bg-accent flex items-center justify-center text-2xl font-black uppercase">
+                            {job.company_name?.substring(0, 1)}
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-black uppercase tracking-tight mb-1 group-hover:text-primary transition-colors">{job.title}</h3>
+                            <div className="flex items-center gap-4 text-sm font-bold text-black/40">
+                              <span className="flex items-center gap-1.5"><Building2 size={16} /> {job.company_name}</span>
+                              <span className="flex items-center gap-1.5"><MapPin size={16} /> {job.location || "Remote"}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="neo-pill bg-secondary text-black text-[10px] uppercase tracking-widest">98% Match</div>
+                      </div>
+                      
+                      <div className="flex items-center gap-6 text-xs font-black uppercase tracking-widest text-black/40 mb-8">
+                        <span className="flex items-center gap-2"><Briefcase size={16} /> {job.job_type}</span>
+                        <span className="flex items-center gap-2"><DollarSign size={16} /> {job.salary_min && job.salary_max ? `$${job.salary_min/1000}k - $${job.salary_max/1000}k` : "Salary Undisclosed"}</span>
+                        <span className="flex items-center gap-2"><Clock size={16} /> {formatRelativeTime(job.created_at)}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-8 border-t-2 border-black/5">
+                        <button className="flex items-center gap-2 text-black/40 font-black uppercase tracking-widest text-[10px] hover:text-black transition-colors">
+                          <Bookmark size={16} /> Save for later
+                        </button>
+                        <button 
+                          onClick={() => setSelectedJob(job)}
+                          className="h-12 px-8 neo-brutal bg-black text-white font-black uppercase tracking-widest text-xs rounded-xl hover:bg-primary transition-all"
+                        >
+                          Apply Now
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                /* Interviews Tab Content */
+                sessions.length === 0 ? (
+                  <div className="text-center py-20 bg-black/5 rounded-[3rem] border-4 border-dashed border-black/10">
+                    <Sparkles size={48} className="mx-auto mb-4 text-black/10" />
+                    <p className="font-black uppercase tracking-widest text-black/30">No active interviews yet.</p>
+                    <p className="text-xs font-bold text-black/20 mt-2">Keep applying! AI screening is fast.</p>
+                  </div>
+                ) : (
+                  sessions.map((session) => (
+                    <div key={session.id} className="neo-brutal bg-white rounded-3xl overflow-hidden border-2 border-black">
+                      <div className="p-8">
+                        <div className="flex justify-between items-center mb-6">
+                          <div className="flex items-center gap-4">
+                            <div className="h-14 w-14 rounded-xl bg-accent border-2 border-black flex items-center justify-center font-black uppercase">
+                              {session.company_name?.substring(0, 1)}
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-black uppercase tracking-tight">{session.job_title}</h3>
+                              <p className="text-xs font-black uppercase tracking-widest text-black/40">{session.company_name}</p>
+                            </div>
+                          </div>
+                          <div className={`neo-pill text-[9px] uppercase font-black px-3 ${session.status === 'completed' ? 'bg-primary text-white' : 'bg-secondary text-black'}`}>
+                            {session.status}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-8">
+                          <div className="bg-black/5 p-4 rounded-2xl">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-black/40 mb-1">Deadline</p>
+                            <p className="text-sm font-bold">{new Date(session.deadline_at).toLocaleDateString()}</p>
+                          </div>
+                          <div className="bg-black/5 p-4 rounded-2xl">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-black/40 mb-1">Phase</p>
+                            <p className="text-sm font-bold uppercase">Voice Screening</p>
+                          </div>
+                        </div>
+
+                        {session.status !== 'completed' ? (
+                          <button 
+                            onClick={() => window.location.href = `/interview/${session.id}`}
+                            className="w-full h-14 neo-brutal bg-primary text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2"
+                          >
+                            <Sparkles size={16} className="fill-white" />
+                            Start AI Voice Interview
+                          </button>
+                        ) : (
+                          <div className="w-full h-14 bg-black/5 rounded-2xl flex items-center justify-center font-black uppercase tracking-widest text-xs text-black/30 gap-2">
+                            Interview Completed
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )
+              )}
+            </div>
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-4 space-y-6">
-            <Card className="shadow-sm border-primary/10 bg-primary/[0.02]">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <TrendingUp size={18} className="text-primary" /> 
-                  Career Snapshot
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm font-bold">
-                    <span className="text-muted-foreground">Profile Strength</span>
-                    <span className="text-primary">85%</span>
+          <div className="lg:col-span-4 space-y-8">
+            <div className="neo-brutal bg-secondary p-8 rounded-3xl">
+              <h3 className="text-xl font-black uppercase tracking-tight mb-6 flex items-center gap-3">
+                <TrendingUp size={24} /> Career Growth
+              </h3>
+              <div className="space-y-6">
+                <div>
+                  <div className="flex justify-between text-xs font-black uppercase mb-2 tracking-widest">
+                    <span>Profile Strength</span>
+                    <span>85%</span>
                   </div>
-                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary w-[85%] rounded-full" />
+                  <div className="h-4 neo-brutal bg-white rounded-full overflow-hidden p-0.5">
+                    <div className="h-full bg-primary rounded-full" style={{ width: '85%' }} />
                   </div>
                 </div>
-                
-                <Separator />
-                
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Top Skill Gaps</h4>
+                <div className="pt-6 border-t-2 border-black/10">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-black/40 mb-4">Recommended Skills</h4>
                   <div className="flex flex-wrap gap-2">
                     {["Next.js", "Docker", "System Design"].map(s => (
-                      <Badge key={s} variant="outline" className="text-[10px] font-bold border-primary/20 text-primary bg-primary/5">
+                      <span key={s} className="neo-pill bg-white text-black text-[9px] uppercase tracking-widest">
                         {s}
-                      </Badge>
+                      </span>
                     ))}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
+              </div>
+            </div>
           </div>
         </div>
       </main>
 
       {/* Application Dialog */}
       <Dialog open={!!selectedJob} onOpenChange={(open) => !open && setSelectedJob(null)}>
-        <DialogContent className="sm:max-w-[500px] rounded-[24px]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-black">Apply for Position</DialogTitle>
-            <DialogDescription className="font-medium">
-              You are applying to <span className="text-primary font-bold">{selectedJob?.title}</span> at <span className="font-bold">{selectedJob?.company_name}</span>.
+        <DialogContent className="max-w-xl p-0 overflow-hidden neo-brutal rounded-[2rem] bg-white border-4 border-black">
+          <DialogHeader className="p-8 bg-black text-white border-b-4 border-black">
+            <DialogTitle className="text-3xl font-black uppercase tracking-tighter">Submit Application</DialogTitle>
+            <DialogDescription className="text-white/60 font-bold uppercase tracking-widest text-xs mt-2">
+              Applying for {selectedJob?.title} @ {selectedJob?.company_name}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 py-4">
-            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex items-start gap-3">
-              <div className="mt-1 bg-primary/20 p-2 rounded-lg">
-                <FileText size={18} className="text-primary" />
+          <div className="p-8 space-y-8">
+            <div className="neo-brutal bg-accent p-6 rounded-2xl flex items-start gap-4">
+              <div className="mt-1 bg-black p-2 rounded-xl text-white">
+                <FileText size={20} />
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-bold">Your Profile is Ready</p>
-                <p className="text-xs text-muted-foreground font-medium">
-                  We'll use your current resume and AI profile for this application.
-                </p>
+              <div>
+                <p className="font-black uppercase tracking-tight">Profile is Ready</p>
+                <p className="text-xs font-bold opacity-60">We'll use your analyzed AI resume for this submission.</p>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="coverNote" className="font-bold">Cover Note (Optional)</Label>
-              <Textarea 
-                id="coverNote"
-                placeholder="Briefly explain why you're a great fit..."
-                className="min-h-[120px] rounded-xl focus-visible:ring-primary/20"
+            <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase tracking-widest text-black/40">Cover Note (Optional)</label>
+              <textarea 
+                placeholder="Why are you a great fit?"
+                className="w-full min-h-[160px] p-6 neo-brutal bg-white rounded-2xl outline-none font-bold focus:border-primary transition-all"
                 value={coverNote}
                 onChange={(e) => setCoverNote(e.target.value)}
               />
-              <p className="text-[10px] text-muted-foreground font-medium">Max 500 characters recommended.</p>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <button 
+                onClick={() => setSelectedJob(null)}
+                className="flex-1 h-14 neo-brutal bg-white text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-black/5"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleApply} 
+                disabled={applying}
+                className="flex-[2] h-14 neo-brutal bg-primary text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+              >
+                {applying ? "Sending..." : "Submit Application"}
+              </button>
             </div>
           </div>
-
-          <DialogFooter className="sm:justify-between gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => setSelectedJob(null)}
-              className="font-bold rounded-xl"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleApply} 
-              disabled={applying}
-              className="h-11 px-8 font-bold rounded-xl shadow-lg shadow-primary/20"
-            >
-              {applying ? (
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
-                  Applying...
-                </div>
-              ) : "Submit Application"}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 

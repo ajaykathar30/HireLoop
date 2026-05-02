@@ -1,7 +1,7 @@
 import os
 from typing import List
 from pydantic import BaseModel, Field
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 
@@ -22,9 +22,9 @@ async def generate_batch_evaluation_report(job_title: str, job_description: str,
     """
     Evaluates all 5 interview answers and generates a final report in a single Gemini call.
     """
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-3-flash-preview",
-        google_api_key=os.getenv("GOOGLE_API_KEY"),
+    llm = ChatGroq(
+        model_name="llama-3.3-70b-versatile",
+        groq_api_key=os.getenv("GROQ_API_KEY"),
         temperature=0.3
     )
     

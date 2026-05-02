@@ -38,8 +38,8 @@ def extract_links_from_pdf(pdf_path: str) -> Dict[str, List[str]]:
     try:
         reader = PdfReader(pdf_path)
         
-        # Regex for finding raw URLs in text
-        url_pattern = re.compile(r'https?://(?:www\.)?(?:github\.com|linkedin\.com)[^\s\]\)"\']+')
+        # Regex for finding raw URLs in text (make http optional)
+        url_pattern = re.compile(r'(?:https?://)?(?:www\.)?(?:github\.com)[^\s\]\)"\']+')
         
         for page in reader.pages:
             # 1. Extract from Annotations (Clickable links)
@@ -66,18 +66,21 @@ def extract_links_from_pdf(pdf_path: str) -> Dict[str, List[str]]:
         
     # Categorize links
     github_links = []
-    linkedin_links = []
     
     for link in links:
         link_lower = link.lower()
-        if "github.com" in link_lower:
-            github_links.append(link)
-        elif "linkedin.com/in/" in link_lower:
-            linkedin_links.append(link)
+        
+        # Normalize the link to always have https://
+        normalized_link = link
+        if not normalized_link.startswith("http"):
+            normalized_link = "https://" + normalized_link
             
-    logger.info(f"Found {len(github_links)} GitHub links and {len(linkedin_links)} LinkedIn links.")
+        if "github.com" in link_lower:
+            github_links.append(normalized_link)
+            
+    logger.info(f"Found {len(github_links)} GitHub links.")
     
     return {
-        "github": github_links,
-        "linkedin": linkedin_links
+        "github": github_links
     }
+

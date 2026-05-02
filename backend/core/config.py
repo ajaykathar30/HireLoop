@@ -8,14 +8,17 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_HOURS: int = 24
     
     # Cloudinary
-    CLOUDINARY_CLOUD_NAME: str
-    CLOUDINARY_API_KEY: str
-    CLOUDINARY_API_SECRET: str
+    CLOUDINARY_CLOUD_NAME: str = ""
+    CLOUDINARY_API_KEY: str = ""
+    CLOUDINARY_API_SECRET: str = ""
     
     # AI Keys
-    GOOGLE_API_KEY: str
-    HF_API_KEY: str
+    GOOGLE_API_KEY: str = ""
+    HF_API_KEY: str = ""
     SARVAM_API_KEY: Optional[str] = None
+    GROQ_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

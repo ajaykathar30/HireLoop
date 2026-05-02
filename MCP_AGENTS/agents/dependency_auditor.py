@@ -1,5 +1,5 @@
 """
-RecruitSight — Dependency Auditor Agent
+RecruitSight - Dependency Auditor Agent
 Analyzes the project's dependencies to evaluate technical maturity,
 appropriateness of library choices, and detect over-reliance on heavy frameworks.
 Uses gemini-2.5-flash for structured extraction.
@@ -9,8 +9,8 @@ import json
 import logging
 
 from agents.base import run_agent
-from config import MODEL_FLASH
-from models.schemas import DependencyAuditOutput
+from config import MODEL_NEMOTRON
+from mcp_models.schemas import DependencyAuditOutput
 from tools.git_tools import git_show, list_files
 
 logger = logging.getLogger("recruitsight.dependency_auditor")
@@ -19,7 +19,7 @@ SYSTEM_PROMPT = """You are the Dependency Auditor Agent for RecruitSight.
 
 Your responsibilities:
 1. Analyze the dependency files provided to you: package.json, requirements.txt,
-   Cargo.toml, pom.xml, go.mod, Gemfile, pubspec.yaml — whichever apply.
+   Cargo.toml, pom.xml, go.mod, Gemfile, pubspec.yaml - whichever apply.
 2. List all dependencies (production + development separately if possible).
 3. Evaluate DEPENDENCY APPROPRIATENESS:
    - Are the libraries a sensible fit for the stated problem?
@@ -32,12 +32,12 @@ Your responsibilities:
 5. Evaluate DEPENDENCY MATURITY:
    - Does the candidate use battle-tested, popular libraries?
    - Or do they rely on obscure, unmaintained, or personal forks?
-6. Check if a lock file exists (package-lock.json, poetry.lock, etc.) — good practice.
+6. Check if a lock file exists (package-lock.json, poetry.lock, etc.) - good practice.
 
 Your core principles:
-- EVIDENCE OVER CLAIMS — cite specific package names and versions.
-- NO HALLUCINATION — only analyze dependencies you can see.
-- FAIRNESS — flag both red flags AND genuine strengths."""
+- EVIDENCE OVER CLAIMS - cite specific package names and versions.
+- NO HALLUCINATION - only analyze dependencies you can see.
+- FAIRNESS - flag both red flags AND genuine strengths."""
 
 
 async def dependency_auditor_agent(
@@ -104,7 +104,7 @@ DEPENDENCY FILE CONTENTS:
         system_prompt=SYSTEM_PROMPT,
         user_content=user_content,
         response_schema=DependencyAuditOutput,
-        model=MODEL_FLASH,
+        model=MODEL_NEMOTRON,
     )
 
     if result:

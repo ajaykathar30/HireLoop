@@ -15,6 +15,7 @@ from models.job import Job
 from models.application import Application
 from models.interview import InterviewSession
 from models.notification import Notification
+from models.rag import DomainKnowledgeBase
 
 # this is the Alembic Config object
 config = context.config

@@ -2,7 +2,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import ENCODERS_BY_TYPE
 import numpy as np
+import logging
 from contextlib import asynccontextmanager
+
+# Configure logging for the backend
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s │ %(levelname)-7s │ %(name)-25s │ %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger("hireloop")
+
 
 from routers.auth  import router as auth_router
 from routers.candidates import router as candidates_router
@@ -11,6 +21,7 @@ from routers.jobs import router as jobs_router
 from routers.applications import router as applications_router
 from routers.interviews import router as interviews_router
 from routers.notifications import router as notifications_router
+from routers.reports import router as reports_router
 from core.scheduler import start_scheduler
 
 @asynccontextmanager
@@ -50,6 +61,7 @@ app.include_router(jobs_router)
 app.include_router(applications_router)
 app.include_router(interviews_router)
 app.include_router(notifications_router)
+app.include_router(reports_router)
 
 @app.get("/")
 def root():

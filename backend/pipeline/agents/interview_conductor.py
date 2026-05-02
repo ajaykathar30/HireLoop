@@ -1,7 +1,7 @@
 import os
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 
@@ -13,40 +13,29 @@ class Question(BaseModel):
     text: str = Field(description="The interview question text")
     type: str = Field(description="Type of question: 'technical', 'behavioral', 'resume_gap', 'follow_up'")
 
-class InterviewPlan(BaseModel):
-    questions: List[Question] = Field(description="List of exactly 5 interview questions")
-
 class AnswerEvaluation(BaseModel):
     score: float = Field(description="Score from 0 to 20")
     feedback: str = Field(description="1-2 sentence feedback on the answer")
 
 # ---------------------------------------------------------------------------
-# generate_interview_questions (BATCH)
-#
-# Generates ALL 5 questions at once to ensure a logical flow.
+# Dynamic Question Generation (Vector Memory Context)
 # ---------------------------------------------------------------------------
 
-async def generate_interview_questions(resume_text: str, job_description: str, job_requirements: str) -> List[Question]:
+async def generate_first_question(resume_text: str, job_description: str, job_requirements: str) -> Question:
     """
-    Generates 5 tailored interview questions based on the candidate's resume and job details.
+    Generates the very first introductory/personalized question.
     """
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-3-flash-preview",
-        google_api_key=os.getenv("GOOGLE_API_KEY"),
+    llm = ChatGroq(
+        model_name="llama-3.3-70b-versatile",
+        groq_api_key=os.getenv("GROQ_API_KEY"),
         temperature=0.7
     )
     
-    parser = PydanticOutputParser(pydantic_object=InterviewPlan)
+    parser = PydanticOutputParser(pydantic_object=Question)
     
     prompt = ChatPromptTemplate.from_template(
-        "You are an expert technical recruiter. Based on the candidate's resume and the job description below, "
-        "generate exactly 5 interview questions. \n"
-        "The questions should follow this flow:\n"
-        "1. Introduction/Personalized project question\n"
-        "2. Technical question based on a core skill required for the job\n"
-        "3. Another technical or problem-solving question\n"
-        "4. A behavioral or scenario-based question\n"
-        "5. A closing question or 'why this company' based on the role.\n\n"
+        "You are an expert technical recruiter starting an interview. Based on the candidate's resume and the job description below, "
+        "generate the very first introductory/personalized project question to kick off the interview.\n\n"
         "JOB DESCRIPTION:\n{jd}\n\n"
         "JOB REQUIREMENTS:\n{req}\n\n"
         "CANDIDATE RESUME:\n{resume}\n\n"
@@ -62,7 +51,52 @@ async def generate_interview_questions(resume_text: str, job_description: str, j
         "format_instructions": parser.get_format_instructions()
     })
     
-    return result.questions[:5]
+    return result
+
+async def generate_next_question(conversation_history: str, job_description: str, question_index: int, rag_context: str = "") -> Question:
+    """
+    Generates the next question dynamically based on previous interactions (Vector DB context).
+    """
+    llm = ChatGroq(
+        model_name="llama-3.3-70b-versatile",
+        groq_api_key=os.getenv("GROQ_API_KEY"),
+        temperature=0.7
+    )
+    
+    parser = PydanticOutputParser(pydantic_object=Question)
+    
+    prompt_text = (
+        "You are an expert technical recruiter conducting an interview. This is question {question_number} of 5. "
+        "Based on the job description and the relevant conversation history from earlier in this interview, generate a highly relevant follow-up question. "
+        "If the previous answer lacked detail, ask them to dive deeper into that specific area. If it was complete, pivot to a new technical or behavioral topic.\n\n"
+    )
+    
+    if rag_context:
+        prompt_text += (
+            "IMPORTANT: Base your next question strictly on the following advanced technical scenario/concept:\n"
+            "DEEP DOMAIN KNOWLEDGE:\n{rag_context}\n"
+            "Do not ask a basic question. Frame it as a real-world problem the candidate must solve based on the knowledge provided.\n\n"
+        )
+        
+    prompt_text += (
+        "JOB DESCRIPTION:\n{jd}\n\n"
+        "RELEVANT CONVERSATION HISTORY:\n{history}\n\n"
+        "{format_instructions}"
+    )
+
+    prompt = ChatPromptTemplate.from_template(prompt_text)
+    
+    chain = prompt | llm | parser
+    
+    result = await chain.ainvoke({
+        "question_number": question_index + 1,
+        "jd": job_description,
+        "history": conversation_history,
+        "rag_context": rag_context,
+        "format_instructions": parser.get_format_instructions()
+    })
+    
+    return result
 
 # ---------------------------------------------------------------------------
 # evaluate_interview_answer (Legacy check - replaced by batch report)
@@ -72,9 +106,9 @@ async def evaluate_interview_answer(question: str, candidate_answer: str, job_de
     """
     Evaluates a single answer on a scale of 0-20.
     """
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-3-flash-preview",
-        google_api_key=os.getenv("GOOGLE_API_KEY"),
+    llm = ChatGroq(
+        model_name="llama-3.3-70b-versatile",
+        groq_api_key=os.getenv("GROQ_API_KEY"),
         temperature=0.2
     )
     

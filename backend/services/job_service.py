@@ -27,7 +27,7 @@ async def create_job(db: AsyncSession, user_id: uuid.UUID, data: JobCreate):
         # This satisfies the "using langchain in the job" requirement
         try:
             llm = ChatGoogleGenerativeAI(
-                model="gemini-3-flash-preview",
+                model=settings.GEMINI_MODEL,
                 google_api_key=settings.GOOGLE_API_KEY,
                 temperature=0
             )
@@ -105,7 +105,7 @@ async def get_all_jobs(db: AsyncSession):
     
     jobs_with_companies = []
     for job, company in result:
-        job_data = job.model_dump()
+        job_data = job.model_dump(exclude={"job_embedding"})
         job_data["company_name"] = company.name
         job_data["company_logo"] = company.logo_url
         jobs_with_companies.append(job_data)

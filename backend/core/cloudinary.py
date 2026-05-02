@@ -1,5 +1,6 @@
 import cloudinary
 import cloudinary.uploader
+import asyncio
 from core.config import settings
 
 cloudinary.config(
@@ -14,10 +15,12 @@ async def upload_file(file_content: bytes, folder_path: str, public_id: str = No
     Uploads a file to Cloudinary.
     folder_path: e.g., "HireLoop/Resume" or "HireLoop/CompanyLogo"
     """
-    upload_result = cloudinary.uploader.upload(
-        file_content,
-        folder=folder_path,
-        public_id=public_id,
-        resource_type="auto"
-    )
+    def _upload():
+        return cloudinary.uploader.upload(
+            file_content,
+            folder=folder_path,
+            public_id=public_id,
+            resource_type="auto"
+        )
+    upload_result = await asyncio.to_thread(_upload)
     return upload_result.get("secure_url")

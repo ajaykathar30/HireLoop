@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select, and_
 from core.db import get_db
@@ -9,6 +10,7 @@ from models.application import Application
 from models.company import Company
 from models.job import Job
 from pipeline.interview_graph import interview_app
+from core.sarvam import stream_text_to_speech
 import uuid
 import logging
 from typing import Optional
@@ -54,9 +56,26 @@ async def get_my_interview_sessions(
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate profile not found")
 
-    stmt = select(InterviewSession).join(Application).where(Application.candidate_id == candidate.id)
+    # Join InterviewSession -> Application -> Job -> Company
+    stmt = (
+        select(InterviewSession, Job, Company)
+        .join(Application, InterviewSession.application_id == Application.id)
+        .join(Job, Application.job_id == Job.id)
+        .join(Company, Job.company_id == Company.id)
+        .where(Application.candidate_id == candidate.id)
+        .order_by(InterviewSession.created_at.desc())
+    )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    
+    sessions = []
+    for session, job, company in result:
+        data = session.model_dump()
+        data["job_title"] = job.title
+        data["company_name"] = company.name
+        data["company_logo"] = company.logo_url
+        sessions.append(data)
+        
+    return sessions
 
 @router.post("/{session_id}/start")
 async def start_interview_session(
@@ -80,21 +99,13 @@ async def start_interview_session(
             config=config
         )
         
-        # Fetch the question we just generated
-        q_stmt = select(InterviewQuestion).where(
-            and_(InterviewQuestion.session_id == session_id, InterviewQuestion.order_index == 0)
-        ).limit(1)
-        q_res = await db.execute(q_stmt)
-        db_q = q_res.scalar_one_or_none()
-        
-        if not db_q:
-            raise HTTPException(status_code=500, detail="Failed to initialize interview")
+        snapshot = await interview_app.aget_state(config)
+        next_q_text = snapshot.values.get("next_question_text")
         
         return {
             "question_number": 1,
             "total_questions": 5,
-            "text": db_q.question_text,
-            "audio_base64": db_q.question_audio_url,
+            "text": next_q_text,
             "status": "ongoing"
         }
     except Exception as e:
@@ -123,7 +134,8 @@ async def submit_interview_answer(
                 "last_answer_audio": audio_bytes,
                 "is_timeout": is_timeout or force_finalize,
                 "status": "saving"
-            }
+            },
+            as_node="ask"
         )
         await interview_app.ainvoke(None, config=config)
 
@@ -132,21 +144,14 @@ async def submit_interview_answer(
         if snapshot.values.get("status") == "completed":
             return {"status": "completed", "message": "Interview finished"}
 
-        # 3. Get next question
-        # After save_answer, the current_q_idx in state points to the NEXT question
+        # 3. Get next question from state
         next_idx = snapshot.values.get("current_q_idx")
-        
-        q_stmt = select(InterviewQuestion).where(
-            and_(InterviewQuestion.session_id == session_id, InterviewQuestion.order_index == next_idx)
-        ).limit(1)
-        q_res = await db.execute(q_stmt)
-        db_q = q_res.scalar_one_or_none()
+        next_q_text = snapshot.values.get("next_question_text")
 
         return {
             "status": "ongoing",
             "question_number": next_idx + 1,
-            "text": db_q.question_text if db_q else "Loading...",
-            "audio_base64": db_q.question_audio_url if db_q else None
+            "text": next_q_text or "Loading..."
         }
     except Exception as e:
         logger.error(f"Error submitting answer: {e}")
@@ -165,7 +170,10 @@ async def get_session_by_application(
 
     stmt = select(InterviewSession).where(InterviewSession.application_id == application_id)
     res = await db.execute(stmt)
-    return res.scalar_one_or_none()
+    session = res.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Interview session not found for this application")
+    return session
 
 @router.get("/{session_id}")
 async def get_interview_session_details(
@@ -187,9 +195,36 @@ async def get_interview_session_details(
     q_res = await db.execute(q_stmt)
     return {"session": session, "transcript": q_res.scalars().all()}
 
+@router.get("/{session_id}/stream-audio/{question_idx}")
+async def stream_question_audio(
+    session_id: uuid.UUID,
+    question_idx: int,
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
+):
+    # Verify the candidate owns this session
+    await _assert_candidate_owns_session(session_id, user_id, db)
+
+    q_stmt = select(InterviewQuestion).where(
+        and_(InterviewQuestion.session_id == session_id, InterviewQuestion.order_index == question_idx)
+    ).limit(1)
+    q_res = await db.execute(q_stmt)
+    db_q = q_res.scalar_one_or_none()
+
+    if not db_q:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    async def audio_generator():
+        async for chunk in stream_text_to_speech(db_q.question_text):
+            yield chunk
+
+    # Sarvam TTS returns WAV audio (default codec) — declare correct MIME type
+    return StreamingResponse(audio_generator(), media_type="audio/wav")
+
 @router.get("/job/{job_id}/reports")
 async def get_job_interview_reports(
     job_id: uuid.UUID,
+    limit: Optional[int] = Query(None, description="Limit to top N candidates based on score"),
     user_id: uuid.UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db)
 ):
@@ -229,6 +264,8 @@ async def get_job_interview_reports(
             "session_id": session.id,
             "status": session.status,
             "total_score": session.total_score,
+            "fit_score": app.fit_score,
+            "fit_reasoning": app.fit_reasoning,
             "report_summary": session.report_summary,
             "completed_at": session.completed_at,
             "questions": [
@@ -240,6 +277,12 @@ async def get_job_interview_reports(
                 } for q in questions
             ]
         })
+
+    # Sort reports by total_score descending (None gets 0)
+    reports.sort(key=lambda x: x["total_score"] or 0, reverse=True)
+    
+    if limit is not None:
+        reports = reports[:limit]
 
     return {
         "job_id": job.id,

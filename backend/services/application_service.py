@@ -97,7 +97,7 @@ async def get_candidate_applications(db: AsyncSession, user_id: uuid.UUID):
     
     my_apps = []
     for app, job, company in result:
-        data = app.model_dump()
+        data = app.model_dump(exclude={"fit_reasoning"})
         data["job_title"] = job.title
         data["company_name"] = company.name
         data["company_logo"] = company.logo_url
@@ -121,7 +121,7 @@ async def get_job_applications(db: AsyncSession, job_id: uuid.UUID):
     
     applicants = []
     for app, candidate in result:
-        data = app.model_dump()
+        data = app.model_dump(exclude={"fit_reasoning"})
         data["candidate_name"] = candidate.full_name
         data["candidate_skills"] = candidate.skills
         data["candidate_experience"] = candidate.experience_years

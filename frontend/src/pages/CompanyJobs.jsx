@@ -1,34 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
-import { Button } from "@/components/ui/button";
 import { 
   Plus, 
   Search, 
-  MoreHorizontal, 
   MapPin, 
   Briefcase, 
-  Clock, 
-  Users,
-  Eye
+  Eye,
+  ChevronRight
 } from "lucide-react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
 import { jobApi } from "../lib/api";
 import toast from 'react-hot-toast';
@@ -54,124 +34,110 @@ const CompanyJobs = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navbar />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16 border-b-4 border-black pb-10">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Manage Jobs</h1>
-            <p className="text-muted-foreground font-medium">Post and manage your company's open positions</p>
+            <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter">Manage Jobs</h1>
+            <p className="text-black font-bold uppercase tracking-widest text-xs opacity-40 mt-2">Active listings and pipeline status</p>
           </div>
-          <Button 
-            className="font-bold shadow-lg shadow-primary/20"
+          <button 
+            className="h-16 px-10 neo-brutal bg-primary text-white font-black uppercase tracking-widest text-sm rounded-full flex items-center gap-3 hover:bg-black transition-all"
             onClick={() => navigate("/company/jobs/create")}
           >
-            <Plus size={18} className="mr-2" />
-            Post Jobs
-          </Button>
+            <Plus size={20} />
+            Post New Job
+          </button>
         </div>
 
-        <div className="flex items-center gap-4 mb-6">
-          <div className="relative flex-1 max-w-sm group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
-            <Input 
-              placeholder="Search jobs..." 
-              className="pl-10 h-10 border-muted-foreground/20 focus-visible:ring-primary/20"
-            />
+        <div className="neo-brutal bg-white rounded-[2rem] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-black text-white uppercase tracking-widest text-[10px] font-black border-b-2 border-black">
+                  <th className="px-8 py-6">Role Title</th>
+                  <th className="px-6 py-6">Type</th>
+                  <th className="px-6 py-6">Location</th>
+                  <th className="px-6 py-6">Status</th>
+                  <th className="px-6 py-6 text-right pr-8">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y-2 divide-black/5">
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="px-8 py-20 text-center font-bold text-black/40 uppercase tracking-widest">
+                      Loading your listings...
+                    </td>
+                  </tr>
+                ) : jobs.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-8 py-20 text-center">
+                      <div className="flex flex-col items-center gap-6">
+                         <div className="h-20 w-20 rounded-full bg-black/5 flex items-center justify-center">
+                           <Briefcase size={32} className="opacity-20" />
+                         </div>
+                         <p className="font-black uppercase tracking-widest text-black/40">No jobs posted yet</p>
+                         <button 
+                            className="neo-pill bg-secondary text-black text-xs px-8"
+                            onClick={() => navigate("/company/jobs/create")}
+                         >
+                            Create First Listing
+                         </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  jobs.map((job) => (
+                    <tr key={job.id} className="group hover:bg-black/5 transition-colors">
+                      <td className="px-8 py-8">
+                        <div>
+                          <p className="font-black text-xl uppercase tracking-tight group-hover:text-primary transition-colors">{job.title}</p>
+                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mt-1">ID: {job.id.substring(0, 8)}</p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-8">
+                        <div className="neo-pill bg-white border-black/10 text-[10px] text-black font-black uppercase tracking-widest inline-block">
+                          {job.job_type}
+                        </div>
+                      </td>
+                      <td className="px-6 py-8">
+                        <div className="flex items-center gap-2 text-sm font-bold text-black/60 uppercase tracking-tight">
+                          <MapPin size={16} />
+                          {job.location}
+                        </div>
+                      </td>
+                      <td className="px-6 py-8">
+                        <div className={`neo-pill text-[10px] font-black uppercase tracking-widest inline-block ${
+                          job.status === 'open' 
+                          ? 'bg-accent text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
+                          : 'bg-black/5 text-black/40'
+                        }`}>
+                          {job.status}
+                        </div>
+                      </td>
+                      <td className="px-6 py-8 text-right pr-8">
+                        <div className="flex justify-end gap-3">
+                          <button 
+                            onClick={() => navigate(`/company/jobs/${job.id}/applicants`)}
+                            className="h-12 px-6 neo-brutal bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-black hover:text-white transition-all flex items-center gap-2"
+                          >
+                            <Eye size={16} />
+                            View Pipeline
+                          </button>
+                          <button className="h-12 w-12 neo-brutal bg-white flex items-center justify-center hover:bg-primary hover:text-white transition-all rounded-xl">
+                            <ChevronRight size={20} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-
-        <Card className="border-muted-foreground/10 shadow-sm overflow-hidden">
-          <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead className="font-bold uppercase tracking-wider text-[11px]">Role Title</TableHead>
-                <TableHead className="font-bold uppercase tracking-wider text-[11px]">Type</TableHead>
-                <TableHead className="font-bold uppercase tracking-wider text-[11px]">Location</TableHead>
-                <TableHead className="font-bold uppercase tracking-wider text-[11px]">Status</TableHead>
-                <TableHead className="font-bold uppercase tracking-wider text-[11px]">Date Posted</TableHead>
-                <TableHead className="text-right font-bold uppercase tracking-wider text-[11px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center">
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                      <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                      Loading jobs...
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : jobs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center">
-                    <div className="flex flex-col items-center justify-center gap-4">
-                      <div className="bg-muted p-4 rounded-full">
-                        <Briefcase size={32} className="text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold">No jobs posted yet</p>
-                        <p className="text-sm text-muted-foreground font-medium">Create your first job listing to start hiring.</p>
-                      </div>
-                      <Button variant="outline" size="sm" className="font-bold">
-                        Learn how to post
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                jobs.map((job) => (
-                  <TableRow key={job.id} className="group hover:bg-muted/30 transition-colors">
-                    <TableCell>
-                      <div className="font-bold text-foreground group-hover:text-primary transition-colors">{job.title}</div>
-                      <div className="text-[11px] text-muted-foreground font-medium uppercase">ID: {job.id.substring(0, 8)}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-tight">
-                        {job.job_type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm font-medium text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin size={14} />
-                        {job.location}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`text-[10px] font-bold uppercase tracking-tight ${
-                        job.status === 'open' 
-                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' 
-                        : 'bg-muted text-muted-foreground border-muted-foreground/20'
-                      }`}>
-                        {job.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm font-medium text-muted-foreground italic">
-                      {new Date(job.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon-sm" 
-                          className="h-8 w-8 hover:text-primary"
-                          onClick={() => navigate(`/company/jobs/${job.id}/applicants`)}
-                        >
-                          <Eye size={16} />
-                        </Button>
-                        <Button variant="ghost" size="icon-sm" className="h-8 w-8 hover:text-primary">
-                          <MoreHorizontal size={16} />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </Card>
       </main>
 
       <Footer />

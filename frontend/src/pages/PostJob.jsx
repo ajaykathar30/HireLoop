@@ -1,17 +1,6 @@
 import React, { useState } from 'react';
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
 import { 
   ArrowLeft, 
   Briefcase, 
@@ -65,188 +54,169 @@ const PostJob = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background font-sans">
+    <div className="min-h-screen bg-white">
       <Navbar />
       
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <Button 
-            variant="ghost" 
-            className="pl-0 text-muted-foreground hover:text-primary transition-colors"
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="mb-12">
+          <button 
             onClick={() => navigate("/company/jobs")}
+            className="flex items-center gap-2 text-black/40 font-black uppercase tracking-widest text-[10px] hover:text-black transition-colors mb-6"
           >
-            <ArrowLeft size={18} className="mr-2" />
-            Back to Jobs
-          </Button>
-          <h1 className="text-4xl font-extrabold tracking-tight mt-4">Post a New Position</h1>
-          <p className="text-muted-foreground font-medium text-lg mt-2">Fill in the details to find your next great hire.</p>
+            <ArrowLeft size={14} />
+            Back to Dashboard
+          </button>
+          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none">
+            Create a <br />
+            <span className="text-primary underline decoration-8 underline-offset-8">New Listing</span>
+          </h1>
+          <p className="text-black font-bold uppercase tracking-widest text-xs opacity-40 mt-6">Define the role and find your next talent</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-10">
-          {/* Basic Info */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Briefcase size={18} className="text-primary" />
-              </div>
-              <h2 className="text-xl font-bold italic uppercase tracking-tighter">Job Details</h2>
+        <form onSubmit={handleSubmit} className="space-y-16">
+          {/* Section 1 */}
+          <div className="neo-brutal bg-white p-10 rounded-[2.5rem] space-y-8">
+            <div className="flex items-center gap-4 border-b-4 border-black pb-6">
+               <div className="h-12 w-12 rounded-xl bg-accent border-2 border-black flex items-center justify-center">
+                 <Briefcase size={24} />
+               </div>
+               <h2 className="text-2xl font-black uppercase tracking-tight">Core Details</h2>
             </div>
             
-            <div className="grid gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="title">Job Title</Label>
-                <Input 
-                  id="title" 
-                  placeholder="e.g. Senior Software Engineer" 
-                  required 
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-black/40">Position Title</label>
+                <input 
+                  required
+                  placeholder="e.g. Senior Product Designer"
+                  className="w-full h-16 p-6 neo-brutal bg-white rounded-2xl outline-none font-black focus:border-primary transition-all"
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  className="h-11"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Job Type</Label>
-                  <Select 
-                    defaultValue="Full-time"
-                    onValueChange={(val) => setFormData({...formData, job_type: val})}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-black/40">Job Type</label>
+                  <select 
+                    className="w-full h-16 px-6 neo-brutal bg-white rounded-2xl outline-none font-black appearance-none cursor-pointer"
+                    value={formData.job_type}
+                    onChange={(e) => setFormData({...formData, job_type: e.target.value})}
                   >
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Full-time">Full-time</SelectItem>
-                      <SelectItem value="Part-time">Part-time</SelectItem>
-                      <SelectItem value="Contract">Contract</SelectItem>
-                      <SelectItem value="Internship">Internship</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Internship">Internship</option>
+                  </select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-black/40">Location</label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                    <Input 
-                      id="location" 
-                      placeholder="e.g. Remote, New York, NY" 
-                      required 
+                    <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 text-black/40" size={20} />
+                    <input 
+                      required
+                      placeholder="Remote or City"
+                      className="w-full h-16 pl-14 pr-6 neo-brutal bg-white rounded-2xl outline-none font-black focus:border-primary transition-all"
                       value={formData.location}
                       onChange={(e) => setFormData({...formData, location: e.target.value})}
-                      className="pl-10 h-11"
                     />
                   </div>
                 </div>
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Description & Requirements */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Info size={18} className="text-purple-500" />
-              </div>
-              <h2 className="text-xl font-bold italic uppercase tracking-tighter">Content</h2>
+          {/* Section 2 */}
+          <div className="neo-brutal bg-secondary/10 p-10 rounded-[2.5rem] space-y-8">
+            <div className="flex items-center gap-4 border-b-4 border-black pb-6">
+               <div className="h-12 w-12 rounded-xl bg-primary border-2 border-black flex items-center justify-center text-white">
+                 <Info size={24} />
+               </div>
+               <h2 className="text-2xl font-black uppercase tracking-tight">Job Content</h2>
             </div>
             
-            <div className="grid gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="description">Job Description</Label>
-                <Textarea 
-                  id="description" 
-                  placeholder="Describe the role, team, and day-to-day responsibilities..." 
-                  className="min-h-[150px] leading-relaxed"
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-black/40">Role Description</label>
+                <textarea 
                   required
+                  placeholder="What will they be doing?"
+                  className="w-full min-h-[200px] p-6 neo-brutal bg-white rounded-2xl outline-none font-bold leading-relaxed focus:border-primary transition-all"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="requirements">Requirements</Label>
-                <Textarea 
-                  id="requirements" 
-                  placeholder="List skills, experience, and qualifications..." 
-                  className="min-h-[150px] leading-relaxed"
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-black/40">Requirements</label>
+                <textarea 
                   required
+                  placeholder="Skills and qualifications needed..."
+                  className="w-full min-h-[200px] p-6 neo-brutal bg-white rounded-2xl outline-none font-bold leading-relaxed focus:border-primary transition-all"
                   value={formData.requirements}
                   onChange={(e) => setFormData({...formData, requirements: e.target.value})}
                 />
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Salary & Deadline */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <DollarSign size={18} className="text-emerald-500" />
-              </div>
-              <h2 className="text-xl font-bold italic uppercase tracking-tighter">Settings</h2>
+          {/* Section 3 */}
+          <div className="neo-brutal bg-white p-10 rounded-[2.5rem] space-y-8">
+            <div className="flex items-center gap-4 border-b-4 border-black pb-6">
+               <div className="h-12 w-12 rounded-xl bg-accent border-2 border-black flex items-center justify-center">
+                 <DollarSign size={24} />
+               </div>
+               <h2 className="text-2xl font-black uppercase tracking-tight">Budget & Timeline</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="salary_min">Min Salary ($)</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                  <Input 
-                    id="salary_min" 
-                    type="number"
-                    placeholder="80000" 
-                    value={formData.salary_min}
-                    onChange={(e) => setFormData({...formData, salary_min: e.target.value})}
-                    className="pl-7 h-11"
-                  />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-black/40">Min Salary ($)</label>
+                <input 
+                  type="number"
+                  placeholder="80000"
+                  className="w-full h-16 p-6 neo-brutal bg-white rounded-2xl outline-none font-black focus:border-primary transition-all"
+                  value={formData.salary_min}
+                  onChange={(e) => setFormData({...formData, salary_min: e.target.value})}
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="salary_max">Max Salary ($)</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                  <Input 
-                    id="salary_max" 
-                    type="number"
-                    placeholder="120000" 
-                    value={formData.salary_max}
-                    onChange={(e) => setFormData({...formData, salary_max: e.target.value})}
-                    className="pl-7 h-11"
-                  />
-                </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-black/40">Max Salary ($)</label>
+                <input 
+                  type="number"
+                  placeholder="120000"
+                  className="w-full h-16 p-6 neo-brutal bg-white rounded-2xl outline-none font-black focus:border-primary transition-all"
+                  value={formData.salary_max}
+                  onChange={(e) => setFormData({...formData, salary_max: e.target.value})}
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="deadline">Deadline</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input 
-                    id="deadline" 
-                    type="date"
-                    value={formData.application_deadline}
-                    onChange={(e) => setFormData({...formData, application_deadline: e.target.value})}
-                    className="pl-10 h-11"
-                  />
-                </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-black/40">Deadline</label>
+                <input 
+                  type="date"
+                  className="w-full h-16 px-6 neo-brutal bg-white rounded-2xl outline-none font-black appearance-none"
+                  value={formData.application_deadline}
+                  onChange={(e) => setFormData({...formData, application_deadline: e.target.value})}
+                />
               </div>
             </div>
-          </section>
+          </div>
 
-          <div className="pt-6 flex gap-4">
-            <Button 
-              type="submit" 
-              className="flex-1 h-14 font-bold text-lg shadow-xl shadow-primary/20"
-              disabled={loading}
-            >
-              {loading ? "Publishing..." : "Publish Job Opening"}
-              {!loading && <Sparkles size={18} className="ml-2 fill-current" />}
-            </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="h-14 px-8 font-bold text-lg"
-              onClick={() => navigate("/company/jobs")}
-            >
-              Cancel
-            </Button>
+          <div className="flex gap-6 pt-10">
+             <button 
+                type="button"
+                onClick={() => navigate("/company/jobs")}
+                className="flex-1 h-16 neo-brutal bg-white text-black font-black uppercase tracking-widest text-sm rounded-2xl hover:bg-black/5"
+             >
+                Discard
+             </button>
+             <button 
+                type="submit"
+                disabled={loading}
+                className="flex-[2] h-16 neo-brutal bg-primary text-white font-black uppercase tracking-widest text-sm rounded-2xl hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-3"
+             >
+                {loading ? "Publishing..." : "Publish Job Opening"}
+                <Sparkles size={20} className="fill-white" />
+             </button>
           </div>
         </form>
       </main>
