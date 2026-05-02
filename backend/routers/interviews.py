@@ -56,9 +56,26 @@ async def get_my_interview_sessions(
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate profile not found")
 
-    stmt = select(InterviewSession).join(Application).where(Application.candidate_id == candidate.id)
+    # Join InterviewSession -> Application -> Job -> Company
+    stmt = (
+        select(InterviewSession, Job, Company)
+        .join(Application, InterviewSession.application_id == Application.id)
+        .join(Job, Application.job_id == Job.id)
+        .join(Company, Job.company_id == Company.id)
+        .where(Application.candidate_id == candidate.id)
+        .order_by(InterviewSession.created_at.desc())
+    )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    
+    sessions = []
+    for session, job, company in result:
+        data = session.model_dump()
+        data["job_title"] = job.title
+        data["company_name"] = company.name
+        data["company_logo"] = company.logo_url
+        sessions.append(data)
+        
+    return sessions
 
 @router.post("/{session_id}/start")
 async def start_interview_session(
@@ -182,21 +199,26 @@ async def get_interview_session_details(
 async def stream_question_audio(
     session_id: uuid.UUID,
     question_idx: int,
+    user_id: uuid.UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db)
 ):
+    # Verify the candidate owns this session
+    await _assert_candidate_owns_session(session_id, user_id, db)
+
     q_stmt = select(InterviewQuestion).where(
         and_(InterviewQuestion.session_id == session_id, InterviewQuestion.order_index == question_idx)
     ).limit(1)
     q_res = await db.execute(q_stmt)
     db_q = q_res.scalar_one_or_none()
-    
+
     if not db_q:
         raise HTTPException(status_code=404, detail="Question not found")
-        
+
     async def audio_generator():
         async for chunk in stream_text_to_speech(db_q.question_text):
             yield chunk
 
+    # Sarvam TTS returns WAV audio (default codec) — declare correct MIME type
     return StreamingResponse(audio_generator(), media_type="audio/wav")
 
 @router.get("/job/{job_id}/reports")
@@ -242,6 +264,8 @@ async def get_job_interview_reports(
             "session_id": session.id,
             "status": session.status,
             "total_score": session.total_score,
+            "fit_score": app.fit_score,
+            "fit_reasoning": app.fit_reasoning,
             "report_summary": session.report_summary,
             "completed_at": session.completed_at,
             "questions": [

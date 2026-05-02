@@ -1,5 +1,5 @@
 """
-RecruitSight — Code Quality & Logic Agent
+RecruitSight - Code Quality & Logic Agent
 Evaluates whether the code is logically sound, follows good practices,
 and actually does what it claims to do.
 Uses gemini-2.5-pro for deep code reasoning.
@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 
 from agents.base import run_agent
-from config import MODEL_PRO
+from config import MODEL_MINIMAX
 from mcp_models.schemas import CodeQualityOutput
 from tools.git_tools import (
     git_show,
@@ -47,9 +47,9 @@ Your responsibilities:
    - Comments that explain obvious things excessively
 
 Your core principles:
-- EVIDENCE OVER CLAIMS — cite specific file paths, function names, line patterns.
-- NO HALLUCINATION — only analyze code you can see. If you cannot verify, say UNVERIFIABLE.
-- FAIRNESS — flag both red flags AND genuine strengths."""
+- EVIDENCE OVER CLAIMS - cite specific file paths, function names, line patterns.
+- NO HALLUCINATION - only analyze code you can see. If you cannot verify, say UNVERIFIABLE.
+- FAIRNESS - flag both red flags AND genuine strengths."""
 
 
 def _select_key_files(local_path: str, all_files: list[str]) -> list[str]:
@@ -182,7 +182,7 @@ Provide your detailed code quality and logic assessment."""
         system_prompt=SYSTEM_PROMPT,
         user_content=user_content,
         response_schema=CodeQualityOutput,
-        model=MODEL_PRO,
+        model=MODEL_MINIMAX,
     )
 
     if result:

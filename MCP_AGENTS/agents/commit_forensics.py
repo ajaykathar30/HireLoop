@@ -1,5 +1,5 @@
 """
-RecruitSight — Commit Forensics Agent
+RecruitSight - Commit Forensics Agent
 Performs forensic analysis of the commit history to determine whether
 the candidate genuinely built the project over time or committed it all at once.
 Uses gemini-2.5-flash for pattern analysis.
@@ -44,9 +44,9 @@ Your responsibilities:
    - Evidence of debugging/refactoring commits
 
 Your core principles:
-- EVIDENCE OVER CLAIMS — cite specific commit hashes and dates.
-- NO HALLUCINATION — only analyze the data given to you.
-- FAIRNESS — flag both red flags AND genuine strengths."""
+- EVIDENCE OVER CLAIMS - cite specific commit hashes and dates.
+- NO HALLUCINATION - only analyze the data given to you.
+- FAIRNESS - flag both red flags AND genuine strengths."""
 
 
 async def commit_forensics_agent(local_path: str) -> CommitForensicsOutput | None:

@@ -1,5 +1,5 @@
 """
-RecruitSight — File Structure Analyst Agent
+RecruitSight - File Structure Analyst Agent
 Analyzes the repository's folder and file structure to determine whether it
 represents a real, thoughtfully designed project or a cloned template/boilerplate.
 Uses gemini-2.5-flash for fast structured extraction.
@@ -34,9 +34,9 @@ Your responsibilities:
 5. Score the structure on a scale of 1-10.
 
 Your core principles:
-- EVIDENCE OVER CLAIMS — every conclusion must be backed by specific file paths.
-- NO HALLUCINATION — if you cannot verify something, say "UNVERIFIABLE".
-- FAIRNESS — flag both red flags AND genuine strengths."""
+- EVIDENCE OVER CLAIMS - every conclusion must be backed by specific file paths.
+- NO HALLUCINATION - if you cannot verify something, say "UNVERIFIABLE".
+- FAIRNESS - flag both red flags AND genuine strengths."""
 
 
 async def file_structure_agent(local_path: str, repo_name: str) -> FileStructureOutput | None:

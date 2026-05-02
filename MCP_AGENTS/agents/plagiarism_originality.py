@@ -1,5 +1,5 @@
 """
-RecruitSight — Plagiarism & Originality Agent
+RecruitSight - Plagiarism & Originality Agent
 Cross-references the candidate's code structure, naming patterns, and logic
 against similar repos found by the Similar Repo Discovery Agent to detect copying.
 Uses gemini-2.5-pro for deep cross-referencing reasoning.
@@ -26,7 +26,7 @@ Your responsibilities:
    - Look for tutorial-specific comments that weren't removed.
 3. Compare variable names, function names, and class names against patterns
    that might indicate copying.
-4. Check commit messages — do any commit messages reference the source repo?
+4. Check commit messages - do any commit messages reference the source repo?
    (e.g., "forked from...", "based on tutorial at...")
 5. Assign an Originality Score:
    - 8-10: Clearly original work with unique approaches
@@ -35,10 +35,11 @@ Your responsibilities:
    - 1-2: Near-verbatim copy of existing repository
 
 Your core principles:
-- EVIDENCE OVER CLAIMS — cite specific file paths, naming patterns, structural matches.
-- NO HALLUCINATION — if you cannot confirm copying, do not claim it.
-- FAIRNESS — common patterns (MVC structure, standard configs) are NOT plagiarism.
-  Only flag truly suspicious matches. Many projects legitimately share similar structures."""
+- EVIDENCE OVER CLAIMS - cite specific file paths, naming patterns, structural matches.
+- NO HALLUCINATION - if you cannot confirm copying, do not claim it.
+- FAIRNESS - common patterns (MVC structure, standard configs) are NOT plagiarism.
+  Only flag truly suspicious matches. Many projects legitimately share similar structures. """
+
 
 
 async def plagiarism_originality_agent(

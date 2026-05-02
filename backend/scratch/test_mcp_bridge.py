@@ -20,7 +20,7 @@ async def test_bridge():
     scores = await get_mcp_scores(test_url)
     print("\nFINAL RESULTS:")
     print(f"GitHub Score:   {scores['github_score']}/10")
-    print(f"LinkedIn Score: {scores['linkedin_score']}/10")
 
 if __name__ == "__main__":
+
     asyncio.run(test_bridge())

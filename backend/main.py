@@ -2,7 +2,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import ENCODERS_BY_TYPE
 import numpy as np
+import logging
 from contextlib import asynccontextmanager
+
+# Configure logging for the backend
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s │ %(levelname)-7s │ %(name)-25s │ %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger("hireloop")
+
 
 from routers.auth  import router as auth_router
 from routers.candidates import router as candidates_router

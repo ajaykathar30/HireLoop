@@ -141,8 +141,8 @@ def git_show(repo_path: str, file_path: str, max_bytes: int = 50000) -> str:
         if len(content) == max_bytes:
             content += "\n... [TRUNCATED]"
         return content
-    except (FileNotFoundError, IsADirectoryError, PermissionError) as e:
-        logger.warning(f"Cannot read {file_path}: {e}")
+    except (FileNotFoundError, IsADirectoryError, PermissionError):
+        # Silenced noisy logging for non-existent optional files
         return ""
 
 
@@ -153,9 +153,17 @@ def git_diff(repo_path: str, commit_a: str, commit_b: str) -> str:
 
 
 def git_diff_commit(repo_path: str, commit_hash: str) -> str:
-    """Get the stat diff for a specific commit."""
-    output = _run_git(repo_path, ["diff", "--stat", f"{commit_hash}~1", commit_hash])
+    """Get the stat diff for a specific commit. Handles initial commit gracefully."""
+    # Check if commit has a parent
+    parent_check = _run_git(repo_path, ["rev-parse", "--verify", f"{commit_hash}~1"])
+    if parent_check:
+        output = _run_git(repo_path, ["diff", "--stat", f"{commit_hash}~1", commit_hash])
+    else:
+        # Initial commit - diff against empty tree
+        EMPTY_TREE_HASH = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+        output = _run_git(repo_path, ["diff", "--stat", EMPTY_TREE_HASH, commit_hash])
     return output
+
 
 
 def git_search_code(repo_path: str, pattern: str, max_results: int = 50) -> list[dict]:

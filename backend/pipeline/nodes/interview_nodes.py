@@ -110,7 +110,8 @@ async def save_answer_node(state: InterviewState, config: RunnableConfig):
     # 1. Transcribe
     transcript = state.get("last_answer_text")
     audio_bytes = state.get("last_answer_audio")
-    if not transcript and not state.get("is_timeout") and audio_bytes:
+    # Guard: skip if audio is missing, timed-out, or too small to be real audio
+    if not transcript and not state.get("is_timeout") and audio_bytes and len(audio_bytes) > 100:
         transcript = await speech_to_text(audio_bytes)
         # Background upload to Cloudinary
         asyncio.create_task(upload_file(audio_bytes, "HireLoop/CandidateAudio"))
@@ -143,6 +144,9 @@ async def save_answer_node(state: InterviewState, config: RunnableConfig):
         
         # 3. Generate Next Question Dynamically
         session = await db.get(InterviewSession, session_id)
+        next_q = None  # initialize so it's always bound in the return below
+        used_rag = state.get("used_rag_chunks", [])
+
         if new_idx < 5:
             app = await db.get(Application, session.application_id)
             job = await db.get(Job, app.job_id)
@@ -158,7 +162,6 @@ async def save_answer_node(state: InterviewState, config: RunnableConfig):
             history = "\n".join([m.interaction_text for m in memories])
             
             # --- RAG Retrieval for Deep Domain Knowledge ---
-            used_rag = state.get("used_rag_chunks", [])
             rag_stmt = select(DomainKnowledgeBase)
             
             # Filter out already used chunks to avoid repetition
@@ -196,7 +199,7 @@ async def save_answer_node(state: InterviewState, config: RunnableConfig):
             "current_q_idx": new_idx,
             "status": "asking" if new_idx < 5 else "finalizing",
             "used_rag_chunks": used_rag,
-            "next_question_text": next_q.text if new_idx < 5 else None
+            "next_question_text": next_q.text if next_q else None
         }
     return state
 

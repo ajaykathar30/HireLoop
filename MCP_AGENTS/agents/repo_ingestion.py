@@ -1,5 +1,5 @@
 """
-RecruitSight — Repo Ingestion Agent
+RecruitSight - Repo Ingestion Agent
 Clones the candidate's GitHub repository and validates it.
 Uses subprocess for git operations (not LLM-driven).
 """
@@ -40,9 +40,9 @@ def parse_github_url(url: str) -> tuple[str, str] | None:
 
 async def repo_ingestion_agent(repo_url: str) -> RepoIngestionOutput:
     """
-    Repo Ingestion Agent — clones and validates a GitHub repository.
+    Repo Ingestion Agent - clones and validates a GitHub repository.
     
-    This agent doesn't use the LLM at all — it's pure Python logic
+    This agent doesn't use the LLM at all - it's pure Python logic
     because the task is deterministic (clone, validate, count commits).
     
     Input: GitHub repository URL
@@ -83,7 +83,7 @@ async def repo_ingestion_agent(repo_url: str) -> RepoIngestionOutput:
             error="Failed to clone repository. It may be private, deleted, or inaccessible.",
         )
 
-    # 3. Verify clone — check for commits
+    # 3. Verify clone - check for commits
     commits = git_log(target_dir, max_count=1)
     if not commits:
         return RepoIngestionOutput(

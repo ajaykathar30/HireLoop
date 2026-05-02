@@ -41,6 +41,8 @@ const CandidateHome = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ applications: 0, interviews: 0 });
+  const [sessions, setSessions] = useState([]);
+  const [activeTab, setActiveTab] = useState("recommended");
   const [selectedJob, setSelectedJob] = useState(null);
   const [coverNote, setCoverNote] = useState("");
   const [applying, setApplying] = useState(false);
@@ -48,7 +50,17 @@ const CandidateHome = () => {
   useEffect(() => {
     fetchJobs();
     fetchStats();
+    fetchSessions();
   }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const res = await interviewApi.getMySessions();
+      setSessions(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch sessions:", err);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -160,9 +172,21 @@ const CandidateHome = () => {
           {/* Main Feed */}
           <div className="lg:col-span-8 space-y-10">
             <div className="flex items-center gap-8 border-b-2 border-black/10">
-              <button className="pb-4 text-sm font-black uppercase tracking-widest border-b-4 border-black">Recommended</button>
-              <button className="pb-4 text-sm font-black uppercase tracking-widest text-black/20 hover:text-black transition-colors">Recently Added</button>
-              <button className="pb-4 text-sm font-black uppercase tracking-widest text-black/20 hover:text-black transition-colors">Saved</button>
+              <button 
+                onClick={() => setActiveTab("recommended")}
+                className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'recommended' ? 'border-b-4 border-black text-black' : 'text-black/20 hover:text-black'}`}
+              >
+                Recommended
+              </button>
+              <button 
+                onClick={() => setActiveTab("interviews")}
+                className={`pb-4 text-sm font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'interviews' ? 'border-b-4 border-black text-black' : 'text-black/20 hover:text-black'}`}
+              >
+                My Interviews
+                {sessions.length > 0 && (
+                  <span className="neo-pill bg-accent text-black text-[9px] px-2 py-0.5">{sessions.length}</span>
+                )}
+              </button>
             </div>
 
             <div className="space-y-8">
@@ -170,45 +194,102 @@ const CandidateHome = () => {
                 [1,2,3].map(i => (
                   <div key={i} className="h-48 neo-brutal bg-black/5 animate-pulse rounded-3xl" />
                 ))
-              ) : jobs.map((job) => (
-                <div key={job.id} className="neo-brutal bg-white rounded-3xl overflow-hidden group hover:-translate-y-2 transition-all duration-300">
-                  <div className="p-8">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="flex gap-6">
-                        <div className="h-16 w-16 rounded-2xl neo-brutal bg-accent flex items-center justify-center text-2xl font-black uppercase">
-                          {job.company_name?.substring(0, 1)}
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-black uppercase tracking-tight mb-1 group-hover:text-primary transition-colors">{job.title}</h3>
-                          <div className="flex items-center gap-4 text-sm font-bold text-black/40">
-                            <span className="flex items-center gap-1.5"><Building2 size={16} /> {job.company_name}</span>
-                            <span className="flex items-center gap-1.5"><MapPin size={16} /> {job.location || "Remote"}</span>
+              ) : activeTab === "recommended" ? (
+                jobs.map((job) => (
+                  <div key={job.id} className="neo-brutal bg-white rounded-3xl overflow-hidden group hover:-translate-y-2 transition-all duration-300">
+                    <div className="p-8">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="flex gap-6">
+                          <div className="h-16 w-16 rounded-2xl neo-brutal bg-accent flex items-center justify-center text-2xl font-black uppercase">
+                            {job.company_name?.substring(0, 1)}
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-black uppercase tracking-tight mb-1 group-hover:text-primary transition-colors">{job.title}</h3>
+                            <div className="flex items-center gap-4 text-sm font-bold text-black/40">
+                              <span className="flex items-center gap-1.5"><Building2 size={16} /> {job.company_name}</span>
+                              <span className="flex items-center gap-1.5"><MapPin size={16} /> {job.location || "Remote"}</span>
+                            </div>
                           </div>
                         </div>
+                        <div className="neo-pill bg-secondary text-black text-[10px] uppercase tracking-widest">98% Match</div>
                       </div>
-                      <div className="neo-pill bg-secondary text-black text-[10px] uppercase tracking-widest">98% Match</div>
-                    </div>
-                    
-                    <div className="flex items-center gap-6 text-xs font-black uppercase tracking-widest text-black/40 mb-8">
-                      <span className="flex items-center gap-2"><Briefcase size={16} /> {job.job_type}</span>
-                      <span className="flex items-center gap-2"><DollarSign size={16} /> {job.salary_min && job.salary_max ? `$${job.salary_min/1000}k - $${job.salary_max/1000}k` : "Salary Undisclosed"}</span>
-                      <span className="flex items-center gap-2"><Clock size={16} /> {formatRelativeTime(job.created_at)}</span>
-                    </div>
+                      
+                      <div className="flex items-center gap-6 text-xs font-black uppercase tracking-widest text-black/40 mb-8">
+                        <span className="flex items-center gap-2"><Briefcase size={16} /> {job.job_type}</span>
+                        <span className="flex items-center gap-2"><DollarSign size={16} /> {job.salary_min && job.salary_max ? `$${job.salary_min/1000}k - $${job.salary_max/1000}k` : "Salary Undisclosed"}</span>
+                        <span className="flex items-center gap-2"><Clock size={16} /> {formatRelativeTime(job.created_at)}</span>
+                      </div>
 
-                    <div className="flex items-center justify-between pt-8 border-t-2 border-black/5">
-                      <button className="flex items-center gap-2 text-black/40 font-black uppercase tracking-widest text-[10px] hover:text-black transition-colors">
-                        <Bookmark size={16} /> Save for later
-                      </button>
-                      <button 
-                        onClick={() => setSelectedJob(job)}
-                        className="h-12 px-8 neo-brutal bg-black text-white font-black uppercase tracking-widest text-xs rounded-xl hover:bg-primary transition-all"
-                      >
-                        Apply Now
-                      </button>
+                      <div className="flex items-center justify-between pt-8 border-t-2 border-black/5">
+                        <button className="flex items-center gap-2 text-black/40 font-black uppercase tracking-widest text-[10px] hover:text-black transition-colors">
+                          <Bookmark size={16} /> Save for later
+                        </button>
+                        <button 
+                          onClick={() => setSelectedJob(job)}
+                          className="h-12 px-8 neo-brutal bg-black text-white font-black uppercase tracking-widest text-xs rounded-xl hover:bg-primary transition-all"
+                        >
+                          Apply Now
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                /* Interviews Tab Content */
+                sessions.length === 0 ? (
+                  <div className="text-center py-20 bg-black/5 rounded-[3rem] border-4 border-dashed border-black/10">
+                    <Sparkles size={48} className="mx-auto mb-4 text-black/10" />
+                    <p className="font-black uppercase tracking-widest text-black/30">No active interviews yet.</p>
+                    <p className="text-xs font-bold text-black/20 mt-2">Keep applying! AI screening is fast.</p>
+                  </div>
+                ) : (
+                  sessions.map((session) => (
+                    <div key={session.id} className="neo-brutal bg-white rounded-3xl overflow-hidden border-2 border-black">
+                      <div className="p-8">
+                        <div className="flex justify-between items-center mb-6">
+                          <div className="flex items-center gap-4">
+                            <div className="h-14 w-14 rounded-xl bg-accent border-2 border-black flex items-center justify-center font-black uppercase">
+                              {session.company_name?.substring(0, 1)}
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-black uppercase tracking-tight">{session.job_title}</h3>
+                              <p className="text-xs font-black uppercase tracking-widest text-black/40">{session.company_name}</p>
+                            </div>
+                          </div>
+                          <div className={`neo-pill text-[9px] uppercase font-black px-3 ${session.status === 'completed' ? 'bg-primary text-white' : 'bg-secondary text-black'}`}>
+                            {session.status}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-8">
+                          <div className="bg-black/5 p-4 rounded-2xl">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-black/40 mb-1">Deadline</p>
+                            <p className="text-sm font-bold">{new Date(session.deadline_at).toLocaleDateString()}</p>
+                          </div>
+                          <div className="bg-black/5 p-4 rounded-2xl">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-black/40 mb-1">Phase</p>
+                            <p className="text-sm font-bold uppercase">Voice Screening</p>
+                          </div>
+                        </div>
+
+                        {session.status !== 'completed' ? (
+                          <button 
+                            onClick={() => window.location.href = `/interview/${session.id}`}
+                            className="w-full h-14 neo-brutal bg-primary text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2"
+                          >
+                            <Sparkles size={16} className="fill-white" />
+                            Start AI Voice Interview
+                          </button>
+                        ) : (
+                          <div className="w-full h-14 bg-black/5 rounded-2xl flex items-center justify-center font-black uppercase tracking-widest text-xs text-black/30 gap-2">
+                            Interview Completed
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )
+              )}
             </div>
           </div>
 

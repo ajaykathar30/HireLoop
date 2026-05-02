@@ -1,5 +1,5 @@
 """
-RecruitSight — Real-World Value & Uniqueness Agent
+RecruitSight - Real-World Value & Uniqueness Agent
 Evaluates whether the project addresses a genuine, current real-world problem
 or is a tired solution to an already-saturated problem with no differentiation.
 Uses gemini-2.5-pro for market context reasoning + Exa for web research.
@@ -47,9 +47,9 @@ Your responsibilities:
      but trivial one.
 
 Your core principles:
-- EVIDENCE OVER CLAIMS — base assessment on the web research data provided.
-- NO HALLUCINATION — only reference information from the search results.
-- FAIRNESS — even common projects can demonstrate skill if well-executed."""
+- EVIDENCE OVER CLAIMS - base assessment on the web research data provided.
+- NO HALLUCINATION - only reference information from the search results.
+- FAIRNESS - even common projects can demonstrate skill if well-executed."""
 
 
 async def uniqueness_value_agent(

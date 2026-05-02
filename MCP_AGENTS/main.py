@@ -20,7 +20,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tools.pdf_tools import download_pdf, extract_links_from_pdf
 from orchestrator import run_pipeline as run_github_pipeline
-from linkedin_orchestrator import run_linkedin_pipeline
 
 def setup_logging():
     """Configure structured logging for the pipeline."""
@@ -47,11 +46,6 @@ def validate_github_url(url: str) -> bool:
     pattern = r"https?://github\.com/[^/]+/[^/]+/?$"
     return bool(re.match(pattern, url.strip()))
 
-def validate_linkedin_url(url: str) -> bool:
-    """Basic validation that the URL looks like a LinkedIn profile URL."""
-    pattern = r"https?://(www\.)?linkedin\.com/in/[^/]+/?$"
-    return bool(re.match(pattern, url.strip()))
-
 def print_banner():
     """Print the RecruitSight banner."""
     banner = """
@@ -71,7 +65,7 @@ def print_banner():
 ║   ███████║██║╚██████╔╝██║  ██║   ██║                             ║
 ║   ╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝                             ║
 ║                                                                  ║
-║   Unified Candidate Resume Analyzer                              ║
+║   Candidate Resume & GitHub Analyzer                             ║
 ║   Multi-Agent System with Google Gemini                          ║
 ║                                                                  ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -114,7 +108,6 @@ async def main():
                 pass
 
     github_urls = extracted_links.get("github", [])
-    linkedin_urls = extracted_links.get("linkedin", [])
 
     # Filter for valid URLs
     valid_github = [url for url in github_urls if validate_github_url(url)]
@@ -122,13 +115,7 @@ async def main():
         logger.warning(f"Found GitHub links but none matched the strict repo format: {github_urls}")
         valid_github = [github_urls[0]]
         
-    valid_linkedin = [url for url in linkedin_urls if validate_linkedin_url(url)]
-    if not valid_linkedin and linkedin_urls:
-        logger.warning(f"Found LinkedIn links but none matched the strict profile format: {linkedin_urls}")
-        valid_linkedin = [linkedin_urls[0]]
-
     selected_github = valid_github[0] if valid_github else None
-    selected_linkedin = valid_linkedin[0] if valid_linkedin else None
 
     print("\n" + "=" * 70)
     print("🔍 EXTRACTION RESULTS")
@@ -139,15 +126,9 @@ async def main():
     else:
         print("   🐙 GitHub URL:   ❌ None found in resume")
         
-    if selected_linkedin:
-        print(f"   💼 LinkedIn URL: {selected_linkedin}")
-    else:
-        print("   💼 LinkedIn URL: ❌ None found in resume")
-        
     print("=" * 70 + "\n")
 
     github_result = None
-    linkedin_result = None
 
     # Run GitHub Pipeline
     if selected_github:
@@ -159,19 +140,9 @@ async def main():
     else:
         print("\n⚠️ Skipping GitHub Pipeline: No valid project link found.\n")
 
-    # Run LinkedIn Pipeline
-    if selected_linkedin:
-        print(f"\n🚀 STARTING LINKEDIN PIPELINE: {selected_linkedin}\n")
-        try:
-            linkedin_result = await run_linkedin_pipeline(selected_linkedin)
-        except Exception as e:
-            logger.error(f"LinkedIn pipeline failed: {e}", exc_info=True)
-    else:
-        print("\n⚠️ Skipping LinkedIn Pipeline: No valid profile link found.\n")
-
-    # Print Combined Summary
+    # Print Summary
     print("\n" + "═" * 70)
-    print("🏆 FINAL UNIFIED ANALYSIS COMPLETE")
+    print("🏆 FINAL ANALYSIS COMPLETE")
     print("═" * 70)
 
     # GitHub Summary
@@ -188,23 +159,7 @@ async def main():
         else:
             print("   ❌ Report generation failed.")
     else:
-        print("   ⚠️ No GitHub project analyzed. (Note: Project section empty in report)")
-
-    # LinkedIn Summary
-    print("\n[ LinkedIn Analysis ]")
-    if linkedin_result:
-        successful = sum(1 for r in linkedin_result.agent_results.values() if r.status == "success")
-        total = len(linkedin_result.agent_results)
-        print(f"   Agents: {successful}/{total} succeeded")
-        if linkedin_result.report_path:
-            print(f"   📋 Grade:   {linkedin_result.grade}")
-            print(f"   📈 Score:   {linkedin_result.composite_score}/10")
-            print(f"   👔 Verdict: {linkedin_result.verdict}")
-            print(f"   📄 Report:  {linkedin_result.report_path}")
-        else:
-            print("   ❌ Report generation failed.")
-    else:
-        print("   ⚠️ No LinkedIn profile analyzed. (Note: LinkedIn section empty in report)")
+        print("   ⚠️ No GitHub project analyzed.")
         
     print("\n" + "═" * 70 + "\n")
 
@@ -215,3 +170,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n\n⚠️ Analysis interrupted by user.")
         sys.exit(130)
+
